@@ -126,3 +126,14 @@ After every meaningful implementation, decision, or CI result:
 - Code commit: `016bc5f09cc0c33b46bba837b161af0aee0f5ced`.
 - CI: triggered by the code commit; verify the run before relying on the build.
 - Limitations: not tested on Poco M3; if the playing track is removed from MediaStore it still cannot be represented in the library-based player bar. Queue remains a full-library playlist rather than a custom queue builder.
+
+
+## 2026-11-04 — Per-track custom gallery artwork (Build 43)
+- Updated `app/src/main/java/com/mplayer/app/MainActivity.kt`.
+- Added a per-track gallery image picker using Android's document picker. The selected URI is persisted in app preferences by MediaStore track ID, with persistable read permission.
+- Track rows and the now-playing artwork prefer the custom image, falling back to embedded album artwork when no override exists or the custom image cannot be decoded.
+- Added a per-track reset action to remove the override and restore the default embedded artwork. The source audio file and its metadata are not modified.
+- Code commit: `f6e9a0ca9ab7ab707b54ece8eec960338aad1479`.
+- GitHub Actions run `41734647794` (Build 43): SUCCESS. Kotlin compilation, debug APK build, and artifact upload all completed successfully. Artifact: `M-Player-debug` (~20.1 MiB).
+- Build 42 failed because its earlier intermediate commit updated the call sites before updating the `SongRow` signature and picker state; Build 43 includes the completed matching implementation and passed.
+- Limitations: no installation or runtime test on Poco M3; image permission persistence, display after app restart, reset behavior, and now-playing refresh still need final device validation. CI success is not device validation.
