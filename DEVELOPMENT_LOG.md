@@ -147,3 +147,12 @@ After every meaningful implementation, decision, or CI result:
 - Code commit: `b0822ef62d40cd14bd9a34da76ce01176ea40466`.
 - CI: workflow is expected from the push; status must be checked before treating this milestone as build-verified.
 - Limitations: no Poco M3 runtime testing. A dedicated persistent DJ history/advanced no-repeat algorithm is not included in this basic Smart Mix milestone.
+
+
+## 2026-11-04 — Persist language and restore last main page
+- Updated `app/src/main/java/com/mplayer/app/MainActivity.kt`.
+- Persian/English selection is now loaded from and saved to SharedPreferences, so the selected language survives app restarts.
+- The last main destination is restored on launch. Transient album-detail navigation is normalized to the home screen because an album detail depends on transient navigation state.
+- Code commit: `574a32d43ebd72a5dc51e4ee0fb596b883f2bcfb`.
+- GitHub Actions run `41736919539` was queued when checked; build result is pending.
+- Limitations: complete RTL/LTR layout review, dedicated settings UI, sleep timer, equalizer, DJ mode, logo/launcher icon, and Poco M3 runtime validation remain.
