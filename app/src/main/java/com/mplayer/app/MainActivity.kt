@@ -359,7 +359,7 @@ private fun MPlayerApp() {
                                 if (selectedTab == "album" && !addingTracks) {
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                         Box(Modifier.weight(1f)) {
-                                            SongRow(song, isPersian, index == currentIndex, isPlaying, favoriteIds.contains(song.id.toString()), { playTrack(index) }, { toggleFavorite(song.id) })
+                                            SongRow(song, isPersian, index == currentIndex, isPlaying, favoriteIds.contains(song.id.toString()), trackArtworkOverrides[song.id.toString()], { playTrack(index) }, { toggleFavorite(song.id) }, { selectedArtworkTrackId = song.id; trackArtworkPicker.launch(arrayOf("image/*")) }, { val updated = trackArtworkOverrides - song.id.toString(); trackArtworkOverrides = updated; saveTrackArtworkOverrides(preferences, updated) })
                                         }
                                         IconButton(onClick = {
                                             val albumId = activeAlbum?.id
@@ -391,7 +391,7 @@ private fun MPlayerApp() {
                                         Text(formatDuration(song.duration), color = Orange, fontSize = 11.sp)
                                     }
                                 } else {
-                                    SongRow(song, isPersian, index == currentIndex, isPlaying, favoriteIds.contains(song.id.toString()), { playTrack(index) }, { toggleFavorite(song.id) })
+                                    SongRow(song, isPersian, index == currentIndex, isPlaying, favoriteIds.contains(song.id.toString()), trackArtworkOverrides[song.id.toString()], { playTrack(index) }, { toggleFavorite(song.id) }, { selectedArtworkTrackId = song.id; trackArtworkPicker.launch(arrayOf("image/*")) }, { val updated = trackArtworkOverrides - song.id.toString(); trackArtworkOverrides = updated; saveTrackArtworkOverrides(preferences, updated) })
                                 }
                             }
                         }
