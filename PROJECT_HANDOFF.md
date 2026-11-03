@@ -22,7 +22,7 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 ## Required features
 - Real MediaStore library; search, sorting, multi-select, select all, artwork/title/artist/duration.
 - Albums: create, rename, delete, choose gallery cover, add/remove multiple local songs; persist all metadata and membership.
-- Embedded track art by default; optional per-track gallery override without modifying audio.
+- Embedded track art by default; per-track gallery override implemented and CI-verified, without modifying audio.
 - Playback: play/pause, previous/next, queue, repeat, shuffle, seek, background playback service and media notification.
 - Persistent favorites; removing favorite never deletes source audio. DJ uses favorites only.
 - Smart Mix: floating neon-green play control, random favorites without near repeats.
@@ -38,11 +38,13 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - User album persistence, two-column grid, create/rename/delete.
 - Album detail: add/remove multiple real library tracks, select all/deselect all for visible filtered tracks, persist membership without touching source audio.
 - Album gallery cover selection and display, with persisted read URI permission.
+- Per-track gallery cover override and reset; override URIs are persisted by track ID, custom artwork is preferred in track rows and now-playing display, and source audio is untouched (Build 43 CI success).
 - Library multi-select, visible select-all/deselect-all, add selected songs to a destination album.
 - Media3 ExoPlayer/Session dependencies, PlaybackService hosting ExoPlayer + MediaSession, foreground playback permissions and manifest service declaration.
 - MainActivity now connects to PlaybackService through MediaController; track taps set a Media3 playlist and play; player state drives the basic now-playing controls; previous/next/stop/play/pause call the controller.
 
 ## Partial / not yet implemented
+- Per-track custom artwork is implemented and CI-verified, but gallery permission persistence, display after restart, reset, and now-playing refresh have not been tested on Poco M3.
 - Media3 controller integration compiles successfully in CI; no real-device testing.
 - Playback controls are implemented in code, and the UI now re-checks the active Media3 media ID during its state poll so the highlighted track/index, play state, position, and duration recover when the controller state changes or reconnects. Queue behavior is still a simple view/editor over the full-library Media3 playlist; a dedicated custom queue builder remains.
 - Background service notification/system controls need runtime validation on Poco M3.
@@ -51,9 +53,9 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Sorting, embedded/per-track artwork, Smart Mix, settings/language/RTL polish, equalizer, DJ, release signing and device tests remain.
 
 ## Exact next task
-1. Verify CI for player-state synchronization commit `016bc5f09cc0c33b46bba837b161af0aee0f5ced`.
-2. Improve queue behavior and handle the case where the current track disappears from the MediaStore library; later validate background playback and media notification on Poco M3.
-3. Continue track artwork/sorting, Smart Mix, equalizer, DJ, settings/language/RTL, branding, and release readiness.
+1. Implement library sorting controls and stable sort modes while preserving the current search/filter behavior and two-column album layout.
+2. Then continue Smart Mix, equalizer, DJ, settings/language/RTL, branding, and release readiness.
+3. During final device validation, test per-track gallery artwork selection, persistence after restart, reset to embedded artwork, and now-playing artwork on Poco M3; do not install intermediate builds.
 
 ## Build and files
 - Main branch: main.
