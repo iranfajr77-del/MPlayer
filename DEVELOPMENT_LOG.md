@@ -75,3 +75,12 @@ After every meaningful implementation, decision, or CI result:
 - Code commit: `20b7f33aed8dac09fa405bce5ee786f91654066b`.
 - CI status: pending at the time of this log update; recheck the latest Actions run.
 - Limitations: not device-tested; full library multi-select is still pending.
+
+
+## 2026-11-04 — Library multi-select and add to album
+- Updated `app/src/main/java/com/mplayer/app/MainActivity.kt`.
+- Added a dedicated Select/Done mode to the full library, per-track checkboxes, selected count, and Select all/Deselect all for currently visible (search-filtered) songs.
+- Added Add to album action with a destination-album chooser; selected track IDs are merged into the chosen album and persisted. Existing audio files are not copied, moved, or deleted.
+- Code commit: `f694b46178a9555f0ed879039ff7c310b4434b4d`.
+- CI: workflow run not yet visible in the latest Actions listing at the time of this log update; check its result before relying on the build.
+- Limitations: not tested on Poco M3; library selection behavior and persistence need device validation. Next: migrate playback to Media3 background service with queue, seek, repeat/shuffle and media notification.
