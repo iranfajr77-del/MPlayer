@@ -21,6 +21,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -65,6 +68,15 @@ private fun MPlayerApp() {
     var isPlaying by remember { mutableStateOf(false) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
     var playbackError by remember { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    val preferences = remember { context.getSharedPreferences("mplayer_user_data", android.content.Context.MODE_PRIVATE) }
+    var favoriteIds by remember { mutableStateOf(preferences.getStringSet("favorite_ids", emptySet())?.toSet() ?: emptySet()) }
+    fun toggleFavorite(id: Long) {
+        val updated = favoriteIds.toMutableSet()
+        if (!updated.add(id.toString())) updated.remove(id.toString())
+        favoriteIds = updated
+        preferences.edit().putStringSet("favorite_ids", updated).apply()
+    }
 
     val audioPermission = if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
 
@@ -139,25 +151,26 @@ private fun MPlayerApp() {
                 }
 
                 Spacer(Modifier.height(20.dp))
-                if (selectedTab == "library") {
+                if (selectedTab == "library" || selectedTab == "favorites") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { selectedTab = "home" }) { Icon(Icons.Default.ArrowBack, "Back", tint = NeonGreen) }
-                        Text(if (isPersian) "همه آهنگ‌ها" else "All Songs", fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                        Text(if (selectedTab == "favorites") { if (isPersian) "علاقه‌مندی‌ها" else "Favorites" } else { if (isPersian) "همه آهنگ‌ها" else "All Songs" }, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                     }
-                    Text(if (isPersian) "${songs.size} آهنگ پیدا شد" else "${songs.size} songs found", color = Color(0xFF9BA49D), fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp, bottom = 12.dp))
-                    if (songs.isEmpty()) {
+                    val visibleSongs = songs.filter { song -> (selectedTab != "favorites" || favoriteIds.contains(song.id.toString())) && (searchQuery.isBlank() || song.title.contains(searchQuery, true) || song.artist.contains(searchQuery, true) || song.album.contains(searchQuery, true)) }
+                    Text(if (isPersian) "${visibleSongs.size} آهنگ" else "${visibleSongs.size} songs", color = Color(0xFF9BA49D), fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp, bottom = 8.dp))
+                    OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp), placeholder = { Text(if (isPersian) "جست‌وجوی آهنگ، خواننده یا آلبوم" else "Search songs, artists or albums") }, leadingIcon = { Icon(Icons.Default.Search, null, tint = NeonGreen) }, singleLine = true, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonGreen, unfocusedBorderColor = Color(0xFF39423B), focusedTextColor = SoftWhite, unfocusedTextColor = SoftWhite))
+                    if (songs.isEmpty() || visibleSongs.isEmpty()) {
                         Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                             Icon(Icons.Default.LibraryMusic, null, tint = NeonGreen, modifier = Modifier.size(54.dp))
-                            Text(if (permissionDenied) { if (isPersian) "دسترسی موسیقی داده نشد" else "Music permission denied" } else { if (isPersian) "آهنگی پیدا نشد" else "No music found" }, color = SoftWhite)
+                            Text(if (songs.isEmpty() && permissionDenied) { if (isPersian) "دسترسی موسیقی داده نشد" else "Music permission denied" } else if (selectedTab == "favorites" && favoriteIds.isEmpty()) { if (isPersian) "هنوز آهنگی به علاقه‌مندی‌ها اضافه نکردی" else "No favorites yet" } else { if (isPersian) "نتیجه‌ای پیدا نشد" else "No matching songs" }, color = SoftWhite)
                             Spacer(Modifier.height(14.dp))
-                            Button(onClick = { permissionLauncher.launch(audioPermission) }, colors = ButtonDefaults.buttonColors(containerColor = NeonGreen, contentColor = MBlack)) {
-                                Text(if (isPersian) "اجازه دسترسی و اسکن" else "Allow access & scan")
-                            }
+                            if (songs.isEmpty()) Button(onClick = { permissionLauncher.launch(audioPermission) }, colors = ButtonDefaults.buttonColors(containerColor = NeonGreen, contentColor = MBlack)) { Text(if (isPersian) "اجازه دسترسی و اسکن" else "Allow access & scan") }
                         }
                     } else {
                         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            itemsIndexed(songs, key = { _, song -> song.id }) { index, song ->
-                                SongRow(song, isPersian, index == currentIndex, isPlaying) { playTrack(index) }
+                            itemsIndexed(visibleSongs, key = { _, song -> song.id }) { _, song ->
+                                val index = songs.indexOfFirst { it.id == song.id }
+                                SongRow(song, isPersian, index == currentIndex, isPlaying, favoriteIds.contains(song.id.toString()), { playTrack(index) }, { toggleFavorite(song.id) })
                             }
                         }
                         TextButton(onClick = { refreshSongs() }, modifier = Modifier.align(Alignment.End)) { Text(if (isPersian) "اسکن دوباره" else "Rescan", color = NeonGreen) }
@@ -182,6 +195,8 @@ private fun MPlayerApp() {
                     Text(if (isPersian) "دسترسی سریع" else "Quick Access", color = SoftWhite, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(10.dp))
                     QuickTile(if (isPersian) "همه آهنگ‌ها" else "All Songs") { selectedTab = "library" }
+                    Spacer(Modifier.height(9.dp))
+                    QuickTile(if (isPersian) "علاقه‌مندی‌ها  •  ${favoriteIds.size}" else "Favorites  •  ${favoriteIds.size}") { selectedTab = "favorites"; searchQuery = "" }
                     Spacer(Modifier.weight(1f))
                     Text("M Player • 1.0.1", color = Color(0xFF68716A), fontSize = 11.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
                 }
@@ -218,7 +233,7 @@ private fun MPlayerApp() {
 }
 
 @Composable
-private fun SongRow(song: MusicTrack, isPersian: Boolean, selected: Boolean, playing: Boolean, onClick: () -> Unit) {
+private fun SongRow(song: MusicTrack, isPersian: Boolean, selected: Boolean, playing: Boolean, isFavorite: Boolean, onClick: () -> Unit, onFavorite: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(if (selected) Color(0xFF203321) else Panel, RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(46.dp).background(Color(0xFF252D27), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
             Icon(if (selected && playing) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = NeonGreen)
@@ -228,6 +243,7 @@ private fun SongRow(song: MusicTrack, isPersian: Boolean, selected: Boolean, pla
             Text("${song.artist} • ${song.album}", color = Color(0xFF9BA49D), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Text(formatDuration(song.duration), color = Orange, fontSize = 11.sp)
+        IconButton(onClick = onFavorite) { Icon(if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, contentDescription = "Favorite", tint = if (isFavorite) Orange else Color(0xFF9BA49D)) }
     }
 }
 
