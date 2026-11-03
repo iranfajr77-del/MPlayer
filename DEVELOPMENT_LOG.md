@@ -93,3 +93,10 @@ After every meaningful implementation, decision, or CI result:
 - Commits: service `f295a77c5df81957054c66933a906cd6006b793b`; dependencies `047afa348c55b52e0968ac010d0a7f79fe2d38f0`; manifest `8c6f1c92d007b01cb5cce39cb8da7d3a348a4160`.
 - CI: build runs triggered; check latest Actions before treating this foundation as compile-verified.
 - Limitation: MainActivity still uses legacy MediaPlayer and is not yet connected to PlaybackService. This is only the service foundation, not completed background playback. Next: connect via MediaController, move queue and controls to ExoPlayer, then add seek/repeat/shuffle.
+
+
+## 2026-11-04 — Playback controller connection
+- Updated MainActivity.kt in commit 5fc5c04f4a851f4cb784c7bde25a0d73bb5bd219.
+- Replaced Activity-owned MediaPlayer playback with MediaController connected to PlaybackService. Track selection sets a Media3 playlist with metadata; basic play, pause, stop, previous and next use the controller.
+- CI run 41730953346 was in progress when checked. Device behavior is not tested.
+- Seek/progress, repeat/shuffle, queue editing and background notification validation remain pending.
