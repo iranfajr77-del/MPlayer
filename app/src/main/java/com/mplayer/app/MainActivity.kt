@@ -91,6 +91,7 @@ private fun MPlayerApp() {
     var songs by remember { mutableStateOf(emptyList<MusicTrack>()) }
     var permissionDenied by remember { mutableStateOf(false) }
     var currentIndex by rememberSaveable { mutableIntStateOf(-1) }
+    var currentTrack by remember { mutableStateOf<MusicTrack?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
     var mediaController by remember { mutableStateOf<MediaController?>(null) }
     var playbackError by remember { mutableStateOf(false) }
@@ -209,6 +210,9 @@ private fun MPlayerApp() {
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 currentIndex = songs.indexOfFirst { it.id.toString() == mediaItem?.mediaId }
+                currentTrack = songs.getOrNull(currentIndex) ?: mediaItem?.let { item ->
+                    MusicTrack(item.mediaId.toLongOrNull() ?: -1L, item.mediaMetadata.title?.toString() ?: "Unknown title", item.mediaMetadata.artist?.toString() ?: "Unknown artist", item.mediaMetadata.albumTitle?.toString() ?: "Unknown album", controller?.duration?.takeIf { it > 0L } ?: 0L)
+                }
                 playbackPosition = 0L
                 playbackDuration = controller?.duration?.takeIf { it > 0L } ?: 0L
             }
@@ -230,10 +234,15 @@ private fun MPlayerApp() {
                 val activeIndex = if (activeMediaId == null) -1 else songs.indexOfFirst { it.id.toString() == activeMediaId }
                 if (activeIndex != currentIndex) currentIndex = activeIndex
                 if (activeMediaId == null) {
+                    currentTrack = null
                     isPlaying = false
                     playbackPosition = 0L
                     playbackDuration = 0L
                 } else {
+                    val activeItem = controller.currentMediaItem
+                    currentTrack = songs.getOrNull(activeIndex) ?: activeItem?.let { item ->
+                        MusicTrack(item.mediaId.toLongOrNull() ?: -1L, item.mediaMetadata.title?.toString() ?: "Unknown title", item.mediaMetadata.artist?.toString() ?: "Unknown artist", item.mediaMetadata.albumTitle?.toString() ?: "Unknown album", controller.duration.takeIf { it > 0L } ?: 0L)
+                    }
                     if (!isSeeking) playbackPosition = controller.currentPosition.coerceAtLeast(0L)
                     playbackDuration = controller.duration.takeIf { it > 0L } ?: 0L
                 }
@@ -427,8 +436,8 @@ private fun MPlayerApp() {
                     Text("M Player • 1.0.1", color = Color(0xFF68716A), fontSize = 11.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
                 }
 
-                if (currentIndex in songs.indices) {
-                    val current = songs[currentIndex]
+                if (currentTrack != null) {
+                    val current = currentTrack!!
                     Card(Modifier.fillMaxWidth().padding(top = 10.dp), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
                         Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -443,7 +452,7 @@ private fun MPlayerApp() {
                                         if (controller.isPlaying) controller.pause() else controller.play()
                                     } else playTrack(currentIndex)
                                 }) { Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, if (isPlaying) "Pause" else "Play", tint = NeonGreen, modifier = Modifier.size(32.dp)) }
-                                IconButton(onClick = { mediaController?.stop(); mediaController?.clearMediaItems(); isPlaying = false; currentIndex = -1 }) { Icon(Icons.Default.Stop, "Stop", tint = Orange) }
+                                IconButton(onClick = { mediaController?.stop(); mediaController?.clearMediaItems(); isPlaying = false; currentIndex = -1; currentTrack = null }) { Icon(Icons.Default.Stop, "Stop", tint = Orange) }
                             }
                             if (playbackDuration > 0L) {
                                 Slider(
