@@ -128,7 +128,9 @@ private fun MPlayerApp() {
     var showAddToAlbumDialog by remember { mutableStateOf(false) }
     var sleepTimerEndTime by rememberSaveable { mutableLongStateOf(preferences.getLong("sleep_timer_end", 0L)) }
     var showEqualizer by remember { mutableStateOf(false) }
+    var djModeEnabled by rememberSaveable { mutableStateOf(preferences.getBoolean("dj_mode_enabled", false)) }
     LaunchedEffect(isPersian) { preferences.edit().putBoolean("ui_is_persian", isPersian).apply() }
+    LaunchedEffect(djModeEnabled) { preferences.edit().putBoolean("dj_mode_enabled", djModeEnabled).apply() }
     LaunchedEffect(selectedTab) {
         val restorableTab = if (selectedTab == "album") "home" else selectedTab
         preferences.edit().putString("last_selected_tab", restorableTab).apply()
@@ -599,6 +601,9 @@ private fun MPlayerApp() {
                     Spacer(Modifier.height(9.dp))
                     QuickTile(if (isPersian) "تنظیمات" else "Settings") { selectedTab = "settings" }
                     QuickTile(if (isPersian) "اکولایزر واقعی" else "Audio equalizer") { showEqualizer = true }
+                    Spacer(Modifier.height(9.dp))
+                    QuickTile(if (djModeEnabled) { if (isPersian) "حالت DJ: روشن ✓" else "DJ fade: ON ✓" } else { if (isPersian) "حالت DJ: خاموش" else "DJ fade: OFF" }) { djModeEnabled = !djModeEnabled }
+                    Text(if (isPersian) "با روشن بودن این حالت، صدای آهنگ قبل از رفتن به آهنگ بعدی کم و پس از شروع آهنگ جدید آرام زیاد می‌شود؛ هم‌پوشانی دو آهنگ نیست." else "Fades the current track down before the next track, then fades the new track up. This is not overlapping crossfade.", color = Color(0xFF87918A), fontSize = 10.sp, modifier = Modifier.padding(horizontal = 8.dp))
                     Spacer(Modifier.height(9.dp))
                     QuickTile(if (isPersian) "علاقه‌مندی‌ها  •  ${favoriteIds.size}" else "Favorites  •  ${favoriteIds.size}") { selectedTab = "favorites"; searchQuery = "" }
                     if (favoriteIds.isNotEmpty()) {
