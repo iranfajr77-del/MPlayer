@@ -123,10 +123,20 @@ private fun MPlayerApp() {
     var librarySelectionMode by rememberSaveable { mutableStateOf(false) }
     var selectedLibraryIds by remember { mutableStateOf(setOf<Long>()) }
     var showAddToAlbumDialog by remember { mutableStateOf(false) }
+    var sleepTimerEndTime by rememberSaveable { mutableLongStateOf(preferences.getLong("sleep_timer_end", 0L)) }
     LaunchedEffect(isPersian) { preferences.edit().putBoolean("ui_is_persian", isPersian).apply() }
     LaunchedEffect(selectedTab) {
         val restorableTab = if (selectedTab == "album") "home" else selectedTab
         preferences.edit().putString("last_selected_tab", restorableTab).apply()
+    }
+    LaunchedEffect(sleepTimerEndTime) {
+        if (sleepTimerEndTime > 0L) {
+            val remaining = sleepTimerEndTime - System.currentTimeMillis()
+            if (remaining > 0L) delay(remaining)
+            mediaController?.pause()
+            sleepTimerEndTime = 0L
+            preferences.edit().remove("sleep_timer_end").apply()
+        }
     }
 
     fun toggleFavorite(id: Long) {
@@ -512,6 +522,30 @@ private fun MPlayerApp() {
                                 Text(if (isPersian) "دربارهٔ M Player" else "About M Player", color = SoftWhite, fontWeight = FontWeight.Bold, fontSize = 17.sp)
                                 Text(if (isPersian) "نسخهٔ 1.0.1" else "Version 1.0.1", color = NeonGreen, fontWeight = FontWeight.SemiBold)
                                 Text(if (isPersian) "یک پخش‌کنندهٔ موسیقی با کتابخانه، آلبوم‌های شخصی، علاقه‌مندی‌ها و میکس هوشمند." else "A music player with a library, custom albums, favorites and Smart Mix.", color = Color(0xFF9BA49D), fontSize = 12.sp)
+                            }
+                        }
+                        Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text(if (isPersian) "تایمر خواب" else "Sleep timer", color = SoftWhite, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                                Text(if (sleepTimerEndTime > System.currentTimeMillis()) {
+                                    val mins = ((sleepTimerEndTime - System.currentTimeMillis() + 59999L) / 60000L).toInt()
+                                    if (isPersian) "پخش پس از حدود $mins دقیقه متوقف می‌شود." else "Playback stops in about $mins minutes."
+                                } else { if (isPersian) "زمانی را انتخاب کن تا پخش خودکار متوقف شود." else "Choose when playback should stop automatically." }, color = Color(0xFF9BA49D), fontSize = 12.sp)
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf(15, 30, 45, 60).forEach { minutes ->
+                                        TextButton(onClick = {
+                                            val end = System.currentTimeMillis() + minutes * 60_000L
+                                            sleepTimerEndTime = end
+                                            preferences.edit().putLong("sleep_timer_end", end).apply()
+                                        }, modifier = Modifier.weight(1f)) { Text(if (isPersian) "$minutes دقیقه" else "$minutes min", color = NeonGreen, fontSize = 11.sp) }
+                                    }
+                                }
+                                if (sleepTimerEndTime > 0L) {
+                                    TextButton(onClick = {
+                                        sleepTimerEndTime = 0L
+                                        preferences.edit().remove("sleep_timer_end").apply()
+                                    }) { Text(if (isPersian) "لغو تایمر" else "Cancel timer", color = Orange) }
+                                }
                             }
                         }
                         Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
