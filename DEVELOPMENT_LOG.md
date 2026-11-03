@@ -56,3 +56,13 @@ After every meaningful implementation, decision, or CI result:
 - Code commit: `f42494256d8e629e9b800f944e9a60e49b0c318e`.
 - GitHub Actions run `41729312397` was queued when checked; build result is not yet known.
 - Not implemented in this milestone: gallery cover selection/display, select-all, artwork, album database migration. Device behavior has not been tested on Poco M3.
+
+
+## 2026-11-04 — Album gallery covers
+- Updated `app/src/main/java/com/mplayer/app/MainActivity.kt`.
+- Added Android document picker for selecting an image from the device gallery when creating or editing an album.
+- Took persistable read permission for the selected content URI and saved the URI alongside album metadata; old album records remain readable when no cover field exists.
+- Album cover images now appear in the two-column album grid and album detail header. Clearing a cover only clears the app's reference; deleting an album does not delete the original gallery image.
+- Code commit: `d4f4250129cd620e2d6b2fc56d58ca94192e07ce`.
+- GitHub Actions run `41729754726` was queued when checked; final build result not yet known.
+- Limitations: cover rendering and persisted URI access have not been tested on Poco M3; very large gallery images may require memory/performance tuning. Select-all and full library multi-select remain unimplemented.
