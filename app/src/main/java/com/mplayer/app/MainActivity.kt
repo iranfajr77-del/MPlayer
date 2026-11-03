@@ -292,7 +292,7 @@ private fun MPlayerApp() {
                                         Checkbox(checked = selectedLibraryIds.contains(song.id), onCheckedChange = { checked -> selectedLibraryIds = if (checked) selectedLibraryIds + song.id else selectedLibraryIds - song.id }, colors = CheckboxDefaults.colors(checkedColor = NeonGreen, checkmarkColor = MBlack))
                                         Column(Modifier.weight(1f).padding(8.dp)) {
                                             Text(song.title, color = SoftWhite, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                            Text("\${song.artist} • \${song.album}", color = Color(0xFF9BA49D), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text("${song.artist} • ${song.album}", color = Color(0xFF9BA49D), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         }
                                         Text(formatDuration(song.duration), color = Orange, fontSize = 11.sp)
                                     }
@@ -387,7 +387,7 @@ private fun MPlayerApp() {
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Album, null, tint = NeonGreen)
                                     Text(album.name, color = SoftWhite, modifier = Modifier.weight(1f).padding(start = 10.dp))
-                                    Text("\${album.trackIds.size}", color = Orange)
+                                    Text("${album.trackIds.size}", color = Orange)
                                 }
                             }
                         }
