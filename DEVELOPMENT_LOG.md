@@ -84,3 +84,12 @@ After every meaningful implementation, decision, or CI result:
 - Code commit: `f694b46178a9555f0ed879039ff7c310b4434b4d`.
 - CI: workflow run not yet visible in the latest Actions listing at the time of this log update; check its result before relying on the build.
 - Limitations: not tested on Poco M3; library selection behavior and persistence need device validation. Next: migrate playback to Media3 background service with queue, seek, repeat/shuffle and media notification.
+
+
+## 2026-11-04 — Media3 background playback foundation
+- Added Media3 ExoPlayer and Session dependencies at stable version 1.11.1 in `app/build.gradle.kts`.
+- Added `PlaybackService.kt`, a `MediaSessionService` owning ExoPlayer and a MediaSession so audio can outlive the Activity and Media3 can provide system media controls/notification.
+- Declared foreground media playback permissions and the service in `AndroidManifest.xml`.
+- Commits: service `f295a77c5df81957054c66933a906cd6006b793b`; dependencies `047afa348c55b52e0968ac010d0a7f79fe2d38f0`; manifest `8c6f1c92d007b01cb5cce39cb8da7d3a348a4160`.
+- CI: build runs triggered; check latest Actions before treating this foundation as compile-verified.
+- Limitation: MainActivity still uses legacy MediaPlayer and is not yet connected to PlaybackService. This is only the service foundation, not completed background playback. Next: connect via MediaController, move queue and controls to ExoPlayer, then add seek/repeat/shuffle.
