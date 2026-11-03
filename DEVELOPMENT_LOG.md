@@ -179,3 +179,9 @@ After every meaningful implementation, decision, or CI result:
 - Commit: `90a45725fe944039b546fffc54d5e37abda6f358`.
 - CI status: build triggered by the commit; awaiting result.
 - Limitations: queue reordering/drag-and-drop and named saved queues are not implemented. No Poco M3 runtime validation yet.
+
+
+## 2026-11-04 — Device equalizer integration
+- Added Android platform Equalizer controls and device preset selection in the app.
+- PlaybackService publishes the active audio session ID to shared preferences for the effect.
+- Requires validation on Poco M3; equalizer availability and preset list depend on device audio effects.
