@@ -1,6 +1,9 @@
 package com.mplayer.app
 
 import androidx.media3.exoplayer.ExoPlayer
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 
@@ -15,6 +18,44 @@ class PlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         val player = ExoPlayer.Builder(this).build()
+        val preferences = getSharedPreferences("mplayer_user_data", MODE_PRIVATE)
+        val fadeHandler = Handler(Looper.getMainLooper())
+        var fadeOutStartedAt = 0L
+        var fadeInStartedAt = 0L
+        var lastMediaId: String? = null
+        val fadeDurationMs = 3_500L
+
+        val fadeTask = object : Runnable {
+            override fun run() {
+                val enabled = preferences.getBoolean("dj_mode_enabled", false)
+                if (!enabled) {
+                    player.volume = 1f
+                    fadeOutStartedAt = 0L
+                    fadeInStartedAt = 0L
+                    fadeHandler.postDelayed(this, 250L)
+                    return
+                }
+                if (player.isPlaying) {
+                    val now = SystemClock.elapsedRealtime()
+                    val duration = player.duration
+                    val remaining = if (duration > 0L) duration - player.currentPosition else Long.MAX_VALUE
+                    if (fadeOutStartedAt == 0L && remaining in 1..fadeDurationMs &&
+                        player.hasNextMediaItem() && player.repeatMode != androidx.media3.common.Player.REPEAT_MODE_ONE) {
+                        fadeOutStartedAt = now
+                    }
+                    if (fadeOutStartedAt > 0L) {
+                        val progress = ((now - fadeOutStartedAt).toFloat() / fadeDurationMs).coerceIn(0f, 1f)
+                        player.volume = 1f - progress
+                    } else if (fadeInStartedAt > 0L) {
+                        val progress = ((now - fadeInStartedAt).toFloat() / fadeDurationMs).coerceIn(0f, 1f)
+                        player.volume = progress
+                        if (progress >= 1f) fadeInStartedAt = 0L
+                    }
+                }
+                fadeHandler.postDelayed(this, 100L)
+            }
+        }
+        fadeHandler.post(fadeTask)
         val audioPrefs = getSharedPreferences("mplayer_user_data", MODE_PRIVATE)
         fun saveAudioSessionId() {
             val sessionId = player.audioSessionId
@@ -26,6 +67,12 @@ class PlaybackService : MediaSessionService() {
             }
             override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
                 saveAudioSessionId()
+                if (mediaItem?.mediaId != lastMediaId) {
+                    lastMediaId = mediaItem?.mediaId
+                    fadeOutStartedAt = 0L
+                    fadeInStartedAt = if (preferences.getBoolean("dj_mode_enabled", false)) SystemClock.elapsedRealtime() else 0L
+                    if (fadeInStartedAt > 0L) player.volume = 0f else player.volume = 1f
+                }
             }
         })
         saveAudioSessionId()
