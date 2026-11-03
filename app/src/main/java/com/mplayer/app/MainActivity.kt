@@ -223,6 +223,18 @@ private fun MPlayerApp() {
                     }
                     Text(if (isPersian) "${visibleSongs.size} آهنگ" else "${visibleSongs.size} songs", color = Color(0xFF9BA49D), fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp, bottom = 8.dp))
                     OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp), placeholder = { Text(if (isPersian) "جست‌وجوی آهنگ، خواننده یا آلبوم" else "Search songs, artists or albums") }, leadingIcon = { Icon(Icons.Default.Search, null, tint = NeonGreen) }, singleLine = true, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonGreen, unfocusedBorderColor = Color(0xFF39423B), focusedTextColor = SoftWhite, unfocusedTextColor = SoftWhite))
+                    if (selectedTab == "album" && addingTracks && visibleSongs.isNotEmpty()) {
+                        val allVisibleSelected = visibleSongs.all { selectedTrackIds.contains(it.id) }
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(if (isPersian) "${selectedTrackIds.size} انتخاب‌شده" else "${selectedTrackIds.size} selected", color = Orange, fontSize = 12.sp)
+                            TextButton(onClick = {
+                                selectedTrackIds = if (allVisibleSelected) selectedTrackIds - visibleSongs.map { it.id }.toSet()
+                                else selectedTrackIds + visibleSongs.map { it.id }
+                            }) {
+                                Text(if (allVisibleSelected) { if (isPersian) "لغو انتخاب همه" else "Deselect all" } else { if (isPersian) "انتخاب همه" else "Select all" }, color = NeonGreen, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                     if (songs.isEmpty() || visibleSongs.isEmpty()) {
                         Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                             Icon(Icons.Default.LibraryMusic, null, tint = NeonGreen, modifier = Modifier.size(54.dp))
