@@ -1,56 +1,66 @@
-# M Player — Project Handoff
+# M Player — Living Project Handoff
 
 Last updated: 2026-11-04
+Repository: https://github.com/iranfajr77-del/MPlayer
+Development history: [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md)
+
+## Resume protocol
+In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md from main before coding. Treat GitHub as source of truth. Inspect current code and latest Actions result. Continue from Exact next task; do not ask the user to repeat settled decisions.
 
 ## Product
-- Android offline music player for Xiaomi Poco M3.
-- App name: M Player. Package/application ID must remain `com.mplayer.app`.
-- Kotlin + Jetpack Compose. User is a beginner and does not write code; assistant owns implementation, user approves product decisions and installs/tests only at final milestone.
-- Do not ask user to install intermediate builds. Build/check in GitHub Actions during development; final install only after feature set is implemented.
-- Be honest: CI success is compile/build evidence, not proof of device behavior.
+- Offline Android music player for Xiaomi Poco M3; Kotlin + Jetpack Compose.
+- App name M Player; application ID must remain com.mplayer.app.
+- User is a beginner and does not write code; assistant handles implementation, user makes product decisions and performs final device testing.
+- No intermediate APK installations; complete planned feature set before final installation.
+- CI success means compile/build only, not real-device validation.
 
 ## Brand and UI
-- Primary palette: black #090B0A, neon green #39FF14, orange #FF8A24.
-- Use the user's supplied M Player logo (headphones around M, green/orange glow, play symbol and equalizer) as the canonical app icon and in-app brand mark. The actual logo asset needs to be added to the Android resources; do not redraw it as a letter M.
-- Persian and English UI; Persian should be RTL and English LTR.
-- Home page album grid: two columns.
-- Restore last-used page; default to Albums on first launch.
+- Palette: black #090B0A, neon green #39FF14, orange #FF8A24.
+- Use the exact user-supplied logo (headphones around M, green/orange glow, play symbol, equalizer) as launcher icon and in-app brand mark. Asset still needs adding to Android resources.
+- Persian and English; Persian RTL, English LTR. Home: two-column album grid. Restore last-used page; first launch opens Albums.
 
-## Product requirements
-- Scan real local audio via MediaStore; no fake demo tracks.
-- Albums: create, rename, delete, choose a cover image from gallery, add/remove multiple local songs; album metadata and membership persist across app restarts and app updates.
-- Library: vertical list, embedded artwork where available, title/artist/duration, search, sorting, multi-select, select all, add to album.
-- Track artwork: use embedded artwork by default; allow user-selected per-track artwork override without modifying source audio.
-- Playback: actual audio playback, play/pause, previous/next, queue, repeat, shuffle, seek/progress, background playback and media notification.
-- Favorites: persistent; removing a favorite never deletes the source audio. DJ mode uses Favorites only.
-- Smart Mix: floating neon-green play control starts random favorite playback with no near repeats.
-- Professional DJ mode, fully offline: approximate BPM/beat/mood analysis where feasible, crossfade with two players, configurable 3/6/9/12 sec (default 6), current/next tracks, waveform/BPM/sync status. Be honest that beat matching is approximate and device testing is required.
-- Equalizer: presets Normal, Pop, Rock, Jazz, Classical, Electronic, Hip-Hop, Bass Boost, Vocal; manual 10 bands (31, 62, 125, 250, 500, 1k, 2k, 4k, 8k, 16k Hz); save custom settings, reset, bass boost, virtualizer. Device support varies.
+## Required features
+- Real MediaStore library; search, sorting, multi-select, select all, artwork/title/artist/duration.
+- Albums: create, rename, delete, gallery cover, add/remove multiple local songs; persist all metadata and membership.
+- Embedded track art by default; optional per-track gallery override without modifying audio.
+- Playback: play/pause, previous/next, queue, repeat, shuffle, seek, background playback service and media notification.
+- Persistent favorites; removing favorite never deletes source audio. DJ uses favorites only.
+- Smart Mix: floating neon-green play control, random favorites without near repeats.
+- Offline Professional DJ: approximate BPM/beat/mood analysis, two-player crossfade, 3/6/9/12 seconds (default 6), current/next, waveform/BPM/sync. Beat matching is approximate and needs device testing.
+- Equalizer presets Normal, Pop, Rock, Jazz, Classical, Electronic, Hip-Hop, Bass Boost, Vocal; manual bands 31, 62, 125, 250, 500, 1k, 2k, 4k, 8k, 16k Hz; save/reset, bass boost, virtualizer. Device support varies.
 - Settings: audio/equalizer, DJ, playback, sleep timer, library, notifications, privacy, about, language.
-- All core functions offline; no paid APIs or servers.
-- Preserve user data across upgrades. Stable package ID and a persistent release signing key are required before publishing upgradeable releases.
+- Offline; no paid APIs or servers. Preserve data across upgrades; stable package ID and persistent release signing key needed.
 
-## Current repository
-- https://github.com/iranfajr77-del/MPlayer
-- Main branch: main
-- MainActivity currently contains basic Compose UI, MediaStore scan, basic MediaPlayer playback controls, search and persistent favorite IDs in SharedPreferences.
-- Workflow: .github/workflows/android.yml builds debug APK and uploads artifact M-Player-debug.
-- Build has succeeded for commit 5c31faacc8fc44ff8d56088424de48f53b0bb8f2 (2026-11-04). CI success does not mean tested on Poco M3.
-- Earlier scaffold files include app/build.gradle.kts, AndroidManifest.xml, settings.gradle.kts, root build.gradle.kts, gradle.properties.
-- Current app is incomplete: album management, real logo integration, polished UI, robust playback/background service, queue, artwork, equalizer, DJ engine, settings, release signing, and device tests remain.
+## Current state — 2026-11-04
+Implemented in code, not device-tested:
+- Android scaffold, Compose home/library UI, MediaStore scan.
+- Basic MediaPlayer playback and play/pause, stop, previous/next, auto-next.
+- Search in library/favorites.
+- Favorite IDs persisted in SharedPreferences.
+- Basic album persistence, two-column grid, create/rename/delete.
 
-## Next implementation sequence
-1. Album model + persistent storage + create/rename/delete + two-column album grid.
-2. Album details + multi-select song assignment/removal + gallery album covers.
-3. Add supplied logo asset and proper launcher icon.
-4. Playback engine/service, queue, seek, repeat/shuffle, notification/background playback.
-5. Track art, sorting, library polish, favourites UX and Smart Mix.
-6. Equalizer and DJ implementation with realistic limitations.
-7. Settings, localization/RTL, persistence/migrations, privacy/about.
-8. Release signing strategy, CI release build, final install and real-device test.
+Incomplete/partial:
+- Album membership: no add/remove songs yet; no album cover picker/display.
+- Playback lacks robust foreground service, queue, seek, repeat/shuffle, notification.
+- Supplied logo not yet in resources/launcher icon.
+- Sorting, multi-select, artwork, Smart Mix, settings, RTL polish, equalizer, DJ, release signing and device tests remain.
+
+## Exact next task
+Complete album details: open album, display real phone tracks, multi-select tracks, add selected tracks to album, remove tracks, persist membership, accurate counts. Then add gallery album cover selection/display.
+
+## Build and files
+- Main branch: main.
+- MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
+- CI: .github/workflows/android.yml; debug artifact M-Player-debug.
+- Most recent code commit: e60a2b438b89c561ea99536068bf4c32b9eaa7f4.
+- Latest observed Actions run: 41728649635 was queued when checked; recheck actual conclusion.
+- Scaffold: settings.gradle.kts, build.gradle.kts, gradle.properties, app/build.gradle.kts, app/src/main/AndroidManifest.xml.
+
+## Mandatory maintenance after each milestone
+1. Update this file with current implementation state and exact next task.
+2. Append a dated entry to DEVELOPMENT_LOG.md: what changed, files, commit SHA, CI status, and limitations.
+3. Separate implemented, partial, and not-started features.
+4. Never call a feature complete merely because CI passes.
 
 ## Working rules
-- Use GitHub connector for repository changes.
-- After every committed file, give direct GitHub file link.
-- No APK installation until final planned milestone.
-- Never claim a feature is complete unless code actually implements it; never claim device testing without user testing.
+Use GitHub connector. Give direct links to changed files after commits. Do not ask for intermediate installs. Never claim Poco M3 testing unless the user tested it.
