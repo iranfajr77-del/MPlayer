@@ -110,3 +110,11 @@ After every meaningful implementation, decision, or CI result:
 - Code commit: `1d040d99c2b194c468519853ab161f02b7b949da`.
 - CI: pending; verify the Actions run for this commit before relying on the build.
 - Limitations: no device testing yet; queue currently starts as the scanned library playlist, not a custom queue builder. Playback notification/background behavior still needs Poco M3 validation.
+
+
+## 2026-11-04 — Stable seek-slider dragging
+- Updated `app/src/main/java/com/mplayer/app/MainActivity.kt`.
+- Added an `isSeeking` guard so the periodic playback-position poll does not pull the slider away from the user's finger while dragging; seek is applied when the drag finishes.
+- Code commit: `b41c4647592be985e09dee9ddd4d2a68c55c2974`.
+- GitHub Actions run `41733082738` was queued at the time of this log update; verify its final result.
+- Limitations: this is a UI-state correction only; playback and seek behavior still require real-device testing on Poco M3. Queue still mirrors the library playlist rather than a fully custom queue builder.
