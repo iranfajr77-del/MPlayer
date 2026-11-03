@@ -100,3 +100,13 @@ After every meaningful implementation, decision, or CI result:
 - Replaced Activity-owned MediaPlayer playback with MediaController connected to PlaybackService. Track selection sets a Media3 playlist with metadata; basic play, pause, stop, previous and next use the controller.
 - CI run 41730953346 was in progress when checked. Device behavior is not tested.
 - Seek/progress, repeat/shuffle, queue editing and background notification validation remain pending.
+
+
+## 2026-11-04 — Playback seek, repeat, shuffle and queue controls
+- Updated `app/src/main/java/com/mplayer/app/MainActivity.kt`.
+- Added a live playback progress slider with elapsed/total time and seek-on-release, using MediaController position/duration.
+- Added shuffle toggle and a three-state repeat cycle (off → all → one → off).
+- Added a queue dialog showing the current Media3 playlist; tapping a track jumps to it, and non-current entries can be removed from the queue.
+- Code commit: `1d040d99c2b194c468519853ab161f02b7b949da`.
+- CI: pending; verify the Actions run for this commit before relying on the build.
+- Limitations: no device testing yet; queue currently starts as the scanned library playlist, not a custom queue builder. Playback notification/background behavior still needs Poco M3 validation.
