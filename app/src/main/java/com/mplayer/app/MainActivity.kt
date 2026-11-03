@@ -226,8 +226,17 @@ private fun MPlayerApp() {
         while (true) {
             val controller = mediaController
             if (controller != null) {
-                if (!isSeeking) playbackPosition = controller.currentPosition.coerceAtLeast(0L)
-                playbackDuration = controller.duration.takeIf { it > 0L } ?: 0L
+                val activeMediaId = controller.currentMediaItem?.mediaId
+                val activeIndex = if (activeMediaId == null) -1 else songs.indexOfFirst { it.id.toString() == activeMediaId }
+                if (activeIndex != currentIndex) currentIndex = activeIndex
+                if (activeMediaId == null) {
+                    isPlaying = false
+                    playbackPosition = 0L
+                    playbackDuration = 0L
+                } else {
+                    if (!isSeeking) playbackPosition = controller.currentPosition.coerceAtLeast(0L)
+                    playbackDuration = controller.duration.takeIf { it > 0L } ?: 0L
+                }
                 shuffleEnabled = controller.shuffleModeEnabled
                 repeatMode = controller.repeatMode
             }
