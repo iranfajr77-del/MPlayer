@@ -82,3 +82,10 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 
 ## Working rules
 Use GitHub connector. Give direct links to changed files after commits. Do not ask for intermediate installs. Never claim Poco M3 testing unless the user tested it.
+
+
+## Audio equalizer integration (2026-11-04)
+- Added an equalizer entry point in the home quick-access area.
+- The UI uses Android's `android.media.audiofx.Equalizer` against the active Media3 audio session and exposes the device-provided presets plus an enable switch.
+- PlaybackService stores the active audio session ID in the app preferences when playback starts or the media item changes.
+- Availability depends on device/ROM audio-effect support; test on the target Poco M3. This is not yet verified on-device.
