@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Repeat
@@ -105,6 +106,8 @@ private fun MPlayerApp() {
     var shuffleEnabled by remember { mutableStateOf(false) }
     var repeatMode by remember { mutableIntStateOf(Player.REPEAT_MODE_OFF) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    var sortMode by rememberSaveable { mutableStateOf(preferences.getString("library_sort_mode", "title_asc") ?: "title_asc") }
+    var sortMenuExpanded by remember { mutableStateOf(false) }
     val preferences = remember { context.getSharedPreferences("mplayer_user_data", android.content.Context.MODE_PRIVATE) }
     var favoriteIds by remember { mutableStateOf(preferences.getStringSet("favorite_ids", emptySet())?.toSet() ?: emptySet()) }
     var albums by remember { mutableStateOf(loadAlbums(preferences)) }
@@ -315,7 +318,15 @@ private fun MPlayerApp() {
                             }
                         }
                     }
-                    val visibleSongs = songs.filter { song -> (selectedTab != "favorites" || favoriteIds.contains(song.id.toString())) && (selectedTab != "album" || addingTracks || activeAlbum?.trackIds?.contains(song.id) == true) && (searchQuery.isBlank() || song.title.contains(searchQuery, true) || song.artist.contains(searchQuery, true) || song.album.contains(searchQuery, true)) }
+                    val filteredSongs = songs.filter { song -> (selectedTab != "favorites" || favoriteIds.contains(song.id.toString())) && (selectedTab != "album" || addingTracks || activeAlbum?.trackIds?.contains(song.id) == true) && (searchQuery.isBlank() || song.title.contains(searchQuery, true) || song.artist.contains(searchQuery, true) || song.album.contains(searchQuery, true)) }
+                    val visibleSongs = when (sortMode) {
+                        "title_desc" -> filteredSongs.sortedByDescending { it.title.lowercase() }
+                        "artist_asc" -> filteredSongs.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.artist }.thenBy { it.title.lowercase() })
+                        "album_asc" -> filteredSongs.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.album }.thenBy { it.title.lowercase() })
+                        "duration_asc" -> filteredSongs.sortedBy { it.duration }
+                        "duration_desc" -> filteredSongs.sortedByDescending { it.duration }
+                        else -> filteredSongs.sortedBy { it.title.lowercase() }
+                    }
                     if (selectedTab == "library" && librarySelectionMode) {
                         Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(if (isPersian) "\${selectedLibraryIds.size} آهنگ انتخاب‌شده" else "\${selectedLibraryIds.size} selected", color = Orange, fontSize = 12.sp)
@@ -345,7 +356,38 @@ private fun MPlayerApp() {
                             }
                         }
                     }
-                    Text(if (isPersian) "${visibleSongs.size} آهنگ" else "${visibleSongs.size} songs", color = Color(0xFF9BA49D), fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp, bottom = 8.dp))
+                    Row(Modifier.fillMaxWidth().padding(start = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(if (isPersian) "${visibleSongs.size} آهنگ" else "${visibleSongs.size} songs", color = Color(0xFF9BA49D), fontSize = 12.sp)
+                        Box {
+                            TextButton(onClick = { sortMenuExpanded = true }) {
+                                Icon(Icons.Default.Sort, contentDescription = if (isPersian) "مرتب‌سازی" else "Sort", tint = NeonGreen)
+                                Text(when (sortMode) {
+                                    "title_desc" -> if (isPersian) "نام: نزولی" else "Title: Z–A"
+                                    "artist_asc" -> if (isPersian) "خواننده" else "Artist"
+                                    "album_asc" -> if (isPersian) "آلبوم" else "Album"
+                                    "duration_asc" -> if (isPersian) "کوتاه‌ترین" else "Shortest"
+                                    "duration_desc" -> if (isPersian) "بلندترین" else "Longest"
+                                    else -> if (isPersian) "نام: صعودی" else "Title: A–Z"
+                                }, color = NeonGreen, fontSize = 12.sp)
+                            }
+                            DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
+                                listOf(
+                                    "title_asc" to (if (isPersian) "نام آهنگ: الف تا ی" else "Title: A–Z"),
+                                    "title_desc" to (if (isPersian) "نام آهنگ: ی تا الف" else "Title: Z–A"),
+                                    "artist_asc" to (if (isPersian) "نام خواننده" else "Artist"),
+                                    "album_asc" to (if (isPersian) "نام آلبوم" else "Album"),
+                                    "duration_asc" to (if (isPersian) "مدت: کوتاه به بلند" else "Duration: shortest first"),
+                                    "duration_desc" to (if (isPersian) "مدت: بلند به کوتاه" else "Duration: longest first")
+                                ).forEach { (mode, label) ->
+                                    DropdownMenuItem(text = { Text(label) }, onClick = {
+                                        sortMode = mode
+                                        preferences.edit().putString("library_sort_mode", mode).apply()
+                                        sortMenuExpanded = false
+                                    })
+                                }
+                            }
+                        }
+                    }
                     OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp), placeholder = { Text(if (isPersian) "جست‌وجوی آهنگ، خواننده یا آلبوم" else "Search songs, artists or albums") }, leadingIcon = { Icon(Icons.Default.Search, null, tint = NeonGreen) }, singleLine = true, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonGreen, unfocusedBorderColor = Color(0xFF39423B), focusedTextColor = SoftWhite, unfocusedTextColor = SoftWhite))
                     if (selectedTab == "album" && addingTracks && visibleSongs.isNotEmpty()) {
                         val allVisibleSelected = visibleSongs.all { selectedTrackIds.contains(it.id) }
