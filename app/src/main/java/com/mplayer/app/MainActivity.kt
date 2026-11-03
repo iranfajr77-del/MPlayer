@@ -200,6 +200,42 @@ private fun MPlayerApp() {
         }
     }
 
+    fun playSmartMix() {
+        val controller = mediaController ?: return
+        val favoriteTracks = songs.filter { favoriteIds.contains(it.id.toString()) }
+        if (favoriteTracks.isEmpty()) return
+        try {
+            playbackError = false
+            val previousFirstId = preferences.getLong("smart_mix_last_first_id", -1L)
+            val shuffled = favoriteTracks.shuffled().let { tracks ->
+                if (tracks.size > 1 && tracks.first().id == previousFirstId) {
+                    listOf(tracks[1]) + tracks.filterIndexed { index, _ -> index != 1 }
+                } else tracks
+            }
+            val mediaItems = shuffled.map { song ->
+                val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id)
+                MediaItem.Builder()
+                    .setMediaId(song.id.toString())
+                    .setUri(uri)
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle(song.title)
+                            .setArtist(song.artist)
+                            .setAlbumTitle(song.album)
+                            .build()
+                    )
+                    .build()
+            }
+            preferences.edit().putLong("smart_mix_last_first_id", shuffled.first().id).apply()
+            controller.setMediaItems(mediaItems, 0, 0L)
+            controller.prepare()
+            controller.play()
+        } catch (_: Exception) {
+            isPlaying = false
+            playbackError = true
+        }
+    }
+
     DisposableEffect(context) {
         val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
         val future = MediaController.Builder(context, token).buildAsync()
@@ -491,6 +527,10 @@ private fun MPlayerApp() {
                     QuickTile(if (isPersian) "همه آهنگ‌ها" else "All Songs") { selectedTab = "library" }
                     Spacer(Modifier.height(9.dp))
                     QuickTile(if (isPersian) "علاقه‌مندی‌ها  •  ${favoriteIds.size}" else "Favorites  •  ${favoriteIds.size}") { selectedTab = "favorites"; searchQuery = "" }
+                    if (favoriteIds.isNotEmpty()) {
+                        Spacer(Modifier.height(9.dp))
+                        QuickTile(if (isPersian) "میکس هوشمند • پخش تصادفی علاقه‌مندی‌ها" else "Smart Mix • Shuffle favorites") { playSmartMix() }
+                    }
                     Spacer(Modifier.weight(1f))
                     Text("M Player • 1.0.1", color = Color(0xFF68716A), fontSize = 11.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
                 }
