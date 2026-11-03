@@ -129,10 +129,11 @@ private fun MPlayerApp() {
         val restorableTab = if (selectedTab == "album") "home" else selectedTab
         preferences.edit().putString("last_selected_tab", restorableTab).apply()
     }
-    LaunchedEffect(sleepTimerEndTime) {
+    LaunchedEffect(sleepTimerEndTime, mediaController) {
         if (sleepTimerEndTime > 0L) {
             val remaining = sleepTimerEndTime - System.currentTimeMillis()
             if (remaining > 0L) delay(remaining)
+            // Re-read the latest controller when the deadline is reached.
             mediaController?.pause()
             sleepTimerEndTime = 0L
             preferences.edit().remove("sleep_timer_end").apply()
