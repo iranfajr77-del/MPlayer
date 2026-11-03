@@ -185,3 +185,9 @@ After every meaningful implementation, decision, or CI result:
 - Added Android platform Equalizer controls and device preset selection in the app.
 - PlaybackService publishes the active audio session ID to shared preferences for the effect.
 - Requires validation on Poco M3; equalizer availability and preset list depend on device audio effects.
+
+
+## 2026-11-04 — Rebuild request (Build 74)
+- Triggered a fresh Android CI build without changing application source code, to reproduce the Build 73 application from the same `main` source state and regenerate its debug APK artifact.
+- This is a rebuild only; it does not add or modify app features.
+- Build result and artifact availability must be verified from the new GitHub Actions run.
