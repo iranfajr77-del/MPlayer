@@ -50,7 +50,7 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Media3 controller integration compiles successfully in CI; no real-device testing.
 - Playback controls are implemented in code, and the UI now re-checks the active Media3 media ID during its state poll so the highlighted track/index, play state, position, and duration recover when the controller state changes or reconnects. Queue behavior is still a simple view/editor over the full-library Media3 playlist; a dedicated custom queue builder remains.
 - Background service notification/system controls need runtime validation on Poco M3.
-- Playback queue currently mirrors the scanned library when a track is selected; advanced queue editing is not implemented.
+- Playback queue now supports multi-selecting songs from the scanned library and appending them to the active Media3 queue; existing queue items can still be selected for immediate playback or removed. Reordering and drag-and-drop are not implemented.
 - Supplied logo not yet in resources/launcher icon.
 - Sorting and Smart Mix are implemented in code; Build 47 and Smart Mix CI run `41736421878` succeeded.
 - Embedded/per-track artwork, album workflows, and playback controls are implemented in code but need final device validation.
