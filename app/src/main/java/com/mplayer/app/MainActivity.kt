@@ -1,6 +1,9 @@
 package com.mplayer.app
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.graphics.BitmapFactory
 import android.content.ContentUris
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
@@ -11,6 +14,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -44,6 +48,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,7 +63,7 @@ private val Orange = Color(0xFFFF8A24)
 private val SoftWhite = Color(0xFFF2F5F2)
 
 private data class MusicTrack(val id: Long, val title: String, val artist: String, val album: String, val duration: Long)
-private data class UserAlbum(val id: String, val name: String, val trackIds: Set<Long>)
+private data class UserAlbum(val id: String, val name: String, val trackIds: Set<Long>, val coverUri: String? = null)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,6 +89,7 @@ private fun MPlayerApp() {
     var albums by remember { mutableStateOf(loadAlbums(preferences)) }
     var showAlbumDialog by remember { mutableStateOf(false) }
     var albumName by rememberSaveable { mutableStateOf("") }
+    var pendingCoverUri by rememberSaveable { mutableStateOf<String?>(null) }
     var editingAlbumId by remember { mutableStateOf<String?>(null) }
     var openedAlbumId by rememberSaveable { mutableStateOf<String?>(null) }
     var addingTracks by rememberSaveable { mutableStateOf(false) }
@@ -92,6 +99,17 @@ private fun MPlayerApp() {
         if (!updated.add(id.toString())) updated.remove(id.toString())
         favoriteIds = updated
         preferences.edit().putStringSet("favorite_ids", updated).apply()
+    }
+
+    val coverPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                pendingCoverUri = uri.toString()
+            } catch (_: Exception) {
+                pendingCoverUri = uri.toString()
+            }
+        }
     }
 
     val audioPermission = if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
@@ -173,6 +191,18 @@ private fun MPlayerApp() {
                         Text(if (selectedTab == "favorites") { if (isPersian) "علاقه‌مندی‌ها" else "Favorites" } else if (selectedTab == "album") { albums.firstOrNull { it.id == openedAlbumId }?.name ?: if (isPersian) "آلبوم" else "Album" } else { if (isPersian) "همه آهنگ‌ها" else "All Songs" }, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                     }
                     val activeAlbum = albums.firstOrNull { it.id == openedAlbumId }
+                    if (selectedTab == "album" && activeAlbum != null && !addingTracks) {
+                        Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            AlbumCover(activeAlbum.coverUri, Modifier.size(76.dp))
+                            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                Text(activeAlbum.name, color = SoftWhite, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text(if (isPersian) "${activeAlbum.trackIds.size} آهنگ" else "${activeAlbum.trackIds.size} tracks", color = Orange, fontSize = 12.sp)
+                            }
+                            TextButton(onClick = { albumName = activeAlbum.name; editingAlbumId = activeAlbum.id; pendingCoverUri = activeAlbum.coverUri; showAlbumDialog = true }) {
+                                Text(if (isPersian) "ویرایش" else "Edit", color = NeonGreen)
+                            }
+                        }
+                    }
                     val visibleSongs = songs.filter { song -> (selectedTab != "favorites" || favoriteIds.contains(song.id.toString())) && (selectedTab != "album" || addingTracks || activeAlbum?.trackIds?.contains(song.id) == true) && (searchQuery.isBlank() || song.title.contains(searchQuery, true) || song.artist.contains(searchQuery, true) || song.album.contains(searchQuery, true)) }
                     if (selectedTab == "album" && activeAlbum != null) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -237,7 +267,7 @@ private fun MPlayerApp() {
                 } else {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isPersian) "آلبوم‌های من" else "My Albums", color = SoftWhite, fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                        FilledTonalIconButton(onClick = { albumName = ""; editingAlbumId = null; showAlbumDialog = true }, colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = NeonGreen, contentColor = MBlack)) { Icon(Icons.Default.Add, contentDescription = "Create album") }
+                        FilledTonalIconButton(onClick = { albumName = ""; editingAlbumId = null; pendingCoverUri = null; showAlbumDialog = true }, colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = NeonGreen, contentColor = MBlack)) { Icon(Icons.Default.Add, contentDescription = "Create album") }
                     }
                     Text(if (isPersian) "موسیقی‌هایت را به سلیقه خودت مرتب کن" else "Organize your music your way", color = Color(0xFF9BA49D), fontSize = 13.sp, modifier = Modifier.padding(top = 5.dp, bottom = 20.dp))
                     if (albums.isEmpty()) {
@@ -254,9 +284,7 @@ private fun MPlayerApp() {
                             items(albums, key = { it.id }) { album ->
                                 Card(onClick = { openedAlbumId = album.id; selectedTab = "album"; searchQuery = "" }, shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Panel)) {
                                     Column(Modifier.fillMaxWidth().padding(14.dp)) {
-                                        Box(Modifier.fillMaxWidth().height(105.dp).background(Color(0xFF252D27), RoundedCornerShape(13.dp)), contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.Album, null, tint = NeonGreen, modifier = Modifier.size(48.dp))
-                                        }
+                                        AlbumCover(album.coverUri, Modifier.fillMaxWidth().height(105.dp))
                                         Text(album.name, color = SoftWhite, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 10.dp))
                                         Text(if (isPersian) "${album.trackIds.size} آهنگ" else "${album.trackIds.size} tracks", color = Orange, fontSize = 11.sp)
                                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -308,8 +336,8 @@ private fun MPlayerApp() {
             if (showAlbumDialog) {
                 AlertDialog(onDismissRequest = { showAlbumDialog = false }, containerColor = Panel, titleContentColor = SoftWhite, textContentColor = SoftWhite,
                     title = { Text(if (editingAlbumId == null) { if (isPersian) "ساخت آلبوم جدید" else "Create album" } else { if (isPersian) "تغییر نام آلبوم" else "Rename album" }) },
-                    text = { OutlinedTextField(value = albumName, onValueChange = { albumName = it }, singleLine = true, label = { Text(if (isPersian) "نام آلبوم" else "Album name") }) },
-                    confirmButton = { TextButton(onClick = { val clean = albumName.trim(); if (clean.isNotEmpty()) { val id = editingAlbumId; albums = if (id == null) albums + UserAlbum(java.util.UUID.randomUUID().toString(), clean, emptySet()) else albums.map { if (it.id == id) it.copy(name = clean) else it }; saveAlbums(preferences, albums); showAlbumDialog = false } }) { Text(if (isPersian) "ذخیره" else "Save", color = NeonGreen) } },
+                    text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { OutlinedTextField(value = albumName, onValueChange = { albumName = it }, singleLine = true, label = { Text(if (isPersian) "نام آلبوم" else "Album name") }); Row(verticalAlignment = Alignment.CenterVertically) { AlbumCover(pendingCoverUri, Modifier.size(68.dp)); Spacer(Modifier.width(12.dp)); Column { TextButton(onClick = { coverPicker.launch(arrayOf("image/*")) }) { Text(if (isPersian) "انتخاب تصویر از گالری" else "Choose gallery image", color = NeonGreen) }; if (pendingCoverUri != null) TextButton(onClick = { pendingCoverUri = null }) { Text(if (isPersian) "حذف تصویر انتخابی" else "Remove selected image", color = Orange) } } } } },
+                    confirmButton = { TextButton(onClick = { val clean = albumName.trim(); if (clean.isNotEmpty()) { val id = editingAlbumId; albums = if (id == null) albums + UserAlbum(java.util.UUID.randomUUID().toString(), clean, emptySet(), pendingCoverUri) else albums.map { if (it.id == id) it.copy(name = clean, coverUri = pendingCoverUri) else it }; saveAlbums(preferences, albums); showAlbumDialog = false } }) { Text(if (isPersian) "ذخیره" else "Save", color = NeonGreen) } },
                     dismissButton = { TextButton(onClick = { showAlbumDialog = false }) { Text(if (isPersian) "انصراف" else "Cancel", color = Orange) } })
             }
         }
@@ -322,7 +350,7 @@ private fun loadAlbums(prefs: android.content.SharedPreferences): List<UserAlbum
         (0 until array.length()).map { i ->
             val obj = array.getJSONObject(i)
             val ids = obj.getJSONArray("tracks")
-            UserAlbum(obj.getString("id"), obj.getString("name"), (0 until ids.length()).map { ids.getLong(it) }.toSet())
+            UserAlbum(obj.getString("id"), obj.getString("name"), (0 until ids.length()).map { ids.getLong(it) }.toSet(), obj.optString("coverUri").takeIf { it.isNotBlank() && it != "null" })
         }
     } catch (_: Exception) { emptyList() }
 }
@@ -332,9 +360,26 @@ private fun saveAlbums(prefs: android.content.SharedPreferences, albums: List<Us
     albums.forEach { album ->
         val ids = org.json.JSONArray()
         album.trackIds.forEach { ids.put(it) }
-        array.put(org.json.JSONObject().put("id", album.id).put("name", album.name).put("tracks", ids))
+        array.put(org.json.JSONObject().put("id", album.id).put("name", album.name).put("tracks", ids).put("coverUri", album.coverUri))
     }
     prefs.edit().putString("user_albums", array.toString()).apply()
+}
+
+@Composable
+private fun AlbumCover(uri: String?, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val bitmap = remember(uri) {
+        if (uri.isNullOrBlank()) null else try {
+            context.contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
+        } catch (_: Exception) { null }
+    }
+    Box(modifier.background(Color(0xFF252D27), RoundedCornerShape(13.dp)), contentAlignment = Alignment.Center) {
+        if (bitmap != null) {
+            Image(bitmap = bitmap, contentDescription = "Album cover", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        } else {
+            Icon(Icons.Default.Album, null, tint = NeonGreen, modifier = Modifier.size(44.dp))
+        }
+    }
 }
 
 @Composable
