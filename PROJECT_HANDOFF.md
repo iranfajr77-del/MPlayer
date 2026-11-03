@@ -21,7 +21,7 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 
 ## Required features
 - Real MediaStore library; search, sorting, multi-select, select all, artwork/title/artist/duration.
-- Albums: create, rename, delete, gallery cover, add/remove multiple local songs; persist all metadata and membership.
+- Albums: create, rename, delete, choose gallery cover, add/remove multiple local songs; persist all metadata and membership.
 - Embedded track art by default; optional per-track gallery override without modifying audio.
 - Playback: play/pause, previous/next, queue, repeat, shuffle, seek, background playback service and media notification.
 - Persistent favorites; removing favorite never deletes source audio. DJ uses favorites only.
@@ -38,22 +38,28 @@ Implemented in code, not device-tested:
 - Search in library/favorites.
 - Favorite IDs persisted in SharedPreferences.
 - Basic album persistence, two-column grid, create/rename/delete.
+- Album detail supports viewing assigned tracks, adding multiple real library tracks through checkbox selection, saving membership, and removing tracks from the album without deleting source audio.
 
 Incomplete/partial:
-- Album membership: no add/remove songs yet; no album cover picker/display.
-- Playback lacks robust foreground service, queue, seek, repeat/shuffle, notification.
+- Album gallery cover picker and cover display; select-all in album assignment.
+- Playback remains basic; no Media3 foreground playback service, queue, seek, repeat/shuffle, or media notification.
 - Supplied logo not yet in resources/launcher icon.
-- Sorting, multi-select, artwork, Smart Mix, settings, RTL polish, equalizer, DJ, release signing and device tests remain.
+- Sorting, multi-select library, artwork, Smart Mix, settings, RTL polish, equalizer, DJ, release signing and device tests remain.
 
 ## Exact next task
-Complete album details: open album, display real phone tracks, multi-select tracks, add selected tracks to album, remove tracks, persist membership, accurate counts. Then add gallery album cover selection/display.
+Complete album covers:
+1. Add an image picker for gallery selection.
+2. Persist selected cover URI per album, retaining permission to read it.
+3. Display cover thumbnails in the two-column album grid and album details.
+4. Ensure editing/deleting albums does not affect original gallery photos.
+Then add select-all and multi-select from library.
 
 ## Build and files
 - Main branch: main.
 - MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
 - CI: .github/workflows/android.yml; debug artifact M-Player-debug.
-- Most recent code commit: e60a2b438b89c561ea99536068bf4c32b9eaa7f4.
-- Latest observed Actions run: 41728649635 was queued when checked; recheck actual conclusion.
+- Latest code commit: f42494256d8e629e9b800f944e9a60e49b0c318e.
+- Latest Actions run: 41729312397, queued when checked; verify its final conclusion before relying on the build.
 - Scaffold: settings.gradle.kts, build.gradle.kts, gradle.properties, app/build.gradle.kts, app/src/main/AndroidManifest.xml.
 
 ## Mandatory maintenance after each milestone
