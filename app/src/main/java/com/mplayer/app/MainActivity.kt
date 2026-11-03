@@ -16,9 +16,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Favorite
@@ -49,6 +55,7 @@ private val Orange = Color(0xFFFF8A24)
 private val SoftWhite = Color(0xFFF2F5F2)
 
 private data class MusicTrack(val id: Long, val title: String, val artist: String, val album: String, val duration: Long)
+private data class UserAlbum(val id: String, val name: String, val trackIds: Set<Long>)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,6 +78,11 @@ private fun MPlayerApp() {
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val preferences = remember { context.getSharedPreferences("mplayer_user_data", android.content.Context.MODE_PRIVATE) }
     var favoriteIds by remember { mutableStateOf(preferences.getStringSet("favorite_ids", emptySet())?.toSet() ?: emptySet()) }
+    var albums by remember { mutableStateOf(loadAlbums(preferences)) }
+    var showAlbumDialog by remember { mutableStateOf(false) }
+    var albumName by rememberSaveable { mutableStateOf("") }
+    var editingAlbumId by remember { mutableStateOf<String?>(null) }
+    var openedAlbumId by rememberSaveable { mutableStateOf<String?>(null) }
     fun toggleFavorite(id: Long) {
         val updated = favoriteIds.toMutableSet()
         if (!updated.add(id.toString())) updated.remove(id.toString())
@@ -151,12 +163,13 @@ private fun MPlayerApp() {
                 }
 
                 Spacer(Modifier.height(20.dp))
-                if (selectedTab == "library" || selectedTab == "favorites") {
+                if (selectedTab == "library" || selectedTab == "favorites" || selectedTab == "album") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { selectedTab = "home" }) { Icon(Icons.Default.ArrowBack, "Back", tint = NeonGreen) }
-                        Text(if (selectedTab == "favorites") { if (isPersian) "علاقه‌مندی‌ها" else "Favorites" } else { if (isPersian) "همه آهنگ‌ها" else "All Songs" }, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                        Text(if (selectedTab == "favorites") { if (isPersian) "علاقه‌مندی‌ها" else "Favorites" } else if (selectedTab == "album") { albums.firstOrNull { it.id == openedAlbumId }?.name ?: if (isPersian) "آلبوم" else "Album" } else { if (isPersian) "همه آهنگ‌ها" else "All Songs" }, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                     }
-                    val visibleSongs = songs.filter { song -> (selectedTab != "favorites" || favoriteIds.contains(song.id.toString())) && (searchQuery.isBlank() || song.title.contains(searchQuery, true) || song.artist.contains(searchQuery, true) || song.album.contains(searchQuery, true)) }
+                    val activeAlbum = albums.firstOrNull { it.id == openedAlbumId }
+                    val visibleSongs = songs.filter { song -> (selectedTab != "favorites" || favoriteIds.contains(song.id.toString())) && (selectedTab != "album" || activeAlbum?.trackIds?.contains(song.id) == true) && (searchQuery.isBlank() || song.title.contains(searchQuery, true) || song.artist.contains(searchQuery, true) || song.album.contains(searchQuery, true)) }
                     Text(if (isPersian) "${visibleSongs.size} آهنگ" else "${visibleSongs.size} songs", color = Color(0xFF9BA49D), fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp, bottom = 8.dp))
                     OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp), placeholder = { Text(if (isPersian) "جست‌وجوی آهنگ، خواننده یا آلبوم" else "Search songs, artists or albums") }, leadingIcon = { Icon(Icons.Default.Search, null, tint = NeonGreen) }, singleLine = true, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonGreen, unfocusedBorderColor = Color(0xFF39423B), focusedTextColor = SoftWhite, unfocusedTextColor = SoftWhite))
                     if (songs.isEmpty() || visibleSongs.isEmpty()) {
@@ -176,18 +189,36 @@ private fun MPlayerApp() {
                         TextButton(onClick = { refreshSongs() }, modifier = Modifier.align(Alignment.End)) { Text(if (isPersian) "اسکن دوباره" else "Rescan", color = NeonGreen) }
                     }
                 } else {
-                    Text(if (isPersian) "آلبوم‌های من" else "My Albums", color = SoftWhite, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(if (isPersian) "آلبوم‌های من" else "My Albums", color = SoftWhite, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                        FilledTonalIconButton(onClick = { albumName = ""; editingAlbumId = null; showAlbumDialog = true }, colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = NeonGreen, contentColor = MBlack)) { Icon(Icons.Default.Add, contentDescription = "Create album") }
+                    }
                     Text(if (isPersian) "موسیقی‌هایت را به سلیقه خودت مرتب کن" else "Organize your music your way", color = Color(0xFF9BA49D), fontSize = 13.sp, modifier = Modifier.padding(top = 5.dp, bottom = 20.dp))
-                    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Panel)) {
-                        Column(Modifier.fillMaxWidth().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.Album, null, tint = NeonGreen, modifier = Modifier.size(44.dp))
-                            Spacer(Modifier.height(12.dp))
-                            Text(if (isPersian) "هنوز آلبومی ساخته نشده" else "No albums yet", color = SoftWhite, fontWeight = FontWeight.SemiBold)
-                            Text(if (isPersian) "برای شروع، آهنگ‌های گوشی را اسکن کن." else "Scan music on your phone to get started.", color = Color(0xFF9BA49D), fontSize = 12.sp, modifier = Modifier.padding(top = 7.dp))
-                            Spacer(Modifier.height(17.dp))
-                            Button(onClick = { selectedTab = "library" }, colors = ButtonDefaults.buttonColors(containerColor = NeonGreen, contentColor = MBlack), shape = RoundedCornerShape(14.dp)) {
-                                Icon(Icons.Default.LibraryMusic, null)
-                                Text(if (isPersian) "انتخاب موسیقی" else "Choose Music", modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold)
+                    if (albums.isEmpty()) {
+                        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Panel)) {
+                            Column(Modifier.fillMaxWidth().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.Album, null, tint = NeonGreen, modifier = Modifier.size(44.dp))
+                                Spacer(Modifier.height(12.dp))
+                                Text(if (isPersian) "هنوز آلبومی ساخته نشده" else "No albums yet", color = SoftWhite, fontWeight = FontWeight.SemiBold)
+                                Text(if (isPersian) "برای ساخت اولین آلبوم، دکمه + را بزن." else "Tap + to create your first album.", color = Color(0xFF9BA49D), fontSize = 12.sp, modifier = Modifier.padding(top = 7.dp))
+                            }
+                        }
+                    } else {
+                        LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            items(albums, key = { it.id }) { album ->
+                                Card(onClick = { openedAlbumId = album.id; selectedTab = "album"; searchQuery = "" }, shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Panel)) {
+                                    Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                                        Box(Modifier.fillMaxWidth().height(105.dp).background(Color(0xFF252D27), RoundedCornerShape(13.dp)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Album, null, tint = NeonGreen, modifier = Modifier.size(48.dp))
+                                        }
+                                        Text(album.name, color = SoftWhite, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 10.dp))
+                                        Text(if (isPersian) "${album.trackIds.size} آهنگ" else "${album.trackIds.size} tracks", color = Orange, fontSize = 11.sp)
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                            IconButton(onClick = { albumName = album.name; editingAlbumId = album.id; showAlbumDialog = true }) { Icon(Icons.Default.Edit, "Rename", tint = SoftWhite) }
+                                            IconButton(onClick = { albums = albums.filterNot { it.id == album.id }; saveAlbums(preferences, albums) }) { Icon(Icons.Default.Delete, "Delete", tint = Orange) }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -228,8 +259,36 @@ private fun MPlayerApp() {
                     }
                 }
             }
+            if (showAlbumDialog) {
+                AlertDialog(onDismissRequest = { showAlbumDialog = false }, containerColor = Panel, titleContentColor = SoftWhite, textContentColor = SoftWhite,
+                    title = { Text(if (editingAlbumId == null) { if (isPersian) "ساخت آلبوم جدید" else "Create album" } else { if (isPersian) "تغییر نام آلبوم" else "Rename album" }) },
+                    text = { OutlinedTextField(value = albumName, onValueChange = { albumName = it }, singleLine = true, label = { Text(if (isPersian) "نام آلبوم" else "Album name") }) },
+                    confirmButton = { TextButton(onClick = { val clean = albumName.trim(); if (clean.isNotEmpty()) { val id = editingAlbumId; albums = if (id == null) albums + UserAlbum(java.util.UUID.randomUUID().toString(), clean, emptySet()) else albums.map { if (it.id == id) it.copy(name = clean) else it }; saveAlbums(preferences, albums); showAlbumDialog = false } }) { Text(if (isPersian) "ذخیره" else "Save", color = NeonGreen) } },
+                    dismissButton = { TextButton(onClick = { showAlbumDialog = false }) { Text(if (isPersian) "انصراف" else "Cancel", color = Orange) } })
+            }
         }
     }
+}
+
+private fun loadAlbums(prefs: android.content.SharedPreferences): List<UserAlbum> {
+    return try {
+        val array = org.json.JSONArray(prefs.getString("user_albums", "[]"))
+        (0 until array.length()).map { i ->
+            val obj = array.getJSONObject(i)
+            val ids = obj.getJSONArray("tracks")
+            UserAlbum(obj.getString("id"), obj.getString("name"), (0 until ids.length()).map { ids.getLong(it) }.toSet())
+        }
+    } catch (_: Exception) { emptyList() }
+}
+
+private fun saveAlbums(prefs: android.content.SharedPreferences, albums: List<UserAlbum>) {
+    val array = org.json.JSONArray()
+    albums.forEach { album ->
+        val ids = org.json.JSONArray()
+        album.trackIds.forEach { ids.put(it) }
+        array.put(org.json.JSONObject().put("id", album.id).put("name", album.name).put("tracks", ids))
+    }
+    prefs.edit().putString("user_albums", array.toString()).apply()
 }
 
 @Composable
