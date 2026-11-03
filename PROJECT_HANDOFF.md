@@ -55,8 +55,8 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Sorting and Smart Mix are implemented in code; Build 47 and Smart Mix CI run `41736421878` succeeded.
 - Embedded/per-track artwork, album workflows, and playback controls are implemented in code but need final device validation.
 - Supplied logo asset is still not in Android resources/launcher icon; only a temporary text M is shown in the app header.
-- Language choice is persisted, last main page is restored, and a bilingual Settings screen is implemented with About/version, permission/privacy explanation, and sleep timer choices. Settings code commit `3c848ea13a1daf63915702f19f01ac4afc10e349` passed CI run `41737345325`. Sleep timer code commit `c0d88f1b8f5f7c93b2bd70967ccd7f33acebb8b6`; CI run `41737599825` is in progress. Full RTL/LTR review and device validation remain.
-- Equalizer, DJ mode, detailed privacy/about policy, release signing and device tests remain. Sleep timer is implemented in code but its timing and pause behavior are not device-tested.
+- Language choice is persisted, last main page is restored, and a bilingual Settings screen is implemented with About/version, permission/privacy explanation, and sleep timer choices. Settings code commit `3c848ea13a1daf63915702f19f01ac4afc10e349` passed CI run `41737345325`. Sleep timer code commit `c0d88f1b8f5f7c93b2bd70967ccd7f33acebb8b6`; follow-up fix `16aed5f0c8a86a2c135cbece0c117be7792d81d5` makes the timer effect observe MediaController reconnection. Build 55 passed CI (run `41737599825`); follow-up build is pending. Full RTL/LTR review and device validation remain.
+- Equalizer, DJ mode, detailed privacy/about policy, release signing and device tests remain. Sleep timer is implemented in code; its effect now restarts against the latest MediaController if the player connects/reconnects before the deadline. Timing and pause behavior are not device-tested.
 
 ## Exact next task
 1. Add the supplied headphone/M logo to Android resources and use it for the launcher icon and in-app brand mark.
@@ -70,7 +70,7 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
 - PlaybackService: app/src/main/java/com/mplayer/app/PlaybackService.kt.
 - CI: .github/workflows/android.yml; debug artifact M-Player-debug.
-- Latest feature code commit: `c0d88f1b8f5f7c93b2bd70967ccd7f33acebb8b6` (sleep timer; CI run `41737599825` in progress at last check).
+- Latest feature code commit: `16aed5f0c8a86a2c135cbece0c117be7792d81d5` (sleep timer reconnect fix; CI pending). Build 55 (`41737599825`) succeeded.
 - Smart Mix documentation commit: `28b8bb7a67fb706f9336ae7c2a67152bda3c0f20`.
 - Latest Actions result must be checked for the Smart Mix code commit; do not treat it as verified until CI succeeds.
 
