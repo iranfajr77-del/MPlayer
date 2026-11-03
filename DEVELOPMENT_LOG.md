@@ -47,3 +47,12 @@ After every meaningful implementation, decision, or CI result:
 2. Append a dated entry to this file describing what changed, which files changed, the commit SHA, CI result (queued/in progress/success/failure), and known limitations.
 3. Keep completed, partially implemented, and not-yet-started features clearly separated.
 4. Never describe a feature as finished merely because the project compiles.
+
+## 2026-11-04 — Album track membership
+- Updated `app/src/main/java/com/mplayer/app/MainActivity.kt`.
+- Album detail now has an Add songs mode showing tracks from the real MediaStore library, multi-select checkboxes, and a save action that persists selected track IDs into the chosen album.
+- Album detail now shows a remove control for each included track; removing affects only the custom album membership, not the source audio file.
+- Album counts derive from persisted membership.
+- Code commit: `f42494256d8e629e9b800f944e9a60e49b0c318e`.
+- GitHub Actions run `41729312397` was queued when checked; build result is not yet known.
+- Not implemented in this milestone: gallery cover selection/display, select-all, artwork, album database migration. Device behavior has not been tested on Poco M3.
