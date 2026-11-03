@@ -156,3 +156,12 @@ After every meaningful implementation, decision, or CI result:
 - Code commit: `574a32d43ebd72a5dc51e4ee0fb596b883f2bcfb`.
 - GitHub Actions run `41736919539` was queued when checked; build result is pending.
 - Limitations: complete RTL/LTR layout review, dedicated settings UI, sleep timer, equalizer, DJ mode, logo/launcher icon, and Poco M3 runtime validation remain.
+
+
+## 2026-11-04 — Settings screen and sleep timer
+- Added a bilingual Settings entry point and screen in `MainActivity.kt`.
+- Settings include persistent Persian/English selection, About/version information, and a plain explanation of the music-library permission and where to manage it in Android.
+- Settings code commit: `3c848ea13a1daf63915702f19f01ac4afc10e349`; GitHub Actions run `41737345325` (Build 54) succeeded.
+- Added a persistent sleep timer with 15, 30, 45 and 60 minute choices and cancellation. Its end timestamp is stored in SharedPreferences; when the deadline is reached the MediaController is asked to pause.
+- Sleep timer code commit: `c0d88f1b8f5f7c93b2bd70967ccd7f33acebb8b6`; GitHub Actions run `41737599825` (Build 55) was in progress at the time of this log update.
+- Limitations: timer behavior, process-restart behavior, and actual playback pause are not yet tested on Poco M3. Equalizer, DJ mode, launcher/in-app supplied logo, full RTL/LTR review, release signing and final device validation remain.
