@@ -48,13 +48,13 @@ Incomplete/partial:
 - Sorting, multi-select library, artwork, Smart Mix, settings, RTL polish, equalizer, DJ, release signing and device tests remain.
 
 ## Exact next task
-Next, prioritize the playback engine migration to a Media3 background service, including queue/seek/repeat/shuffle and media notification. Then continue with artwork/sorting, Smart Mix, equalizer, DJ, settings, branding and release readiness.
+Next, connect MainActivity to PlaybackService through MediaController; move play/pause/next/previous/stop to the Media3 queue, add seek/progress and repeat/shuffle UI, and verify service/notification behavior. Then continue with artwork/sorting, Smart Mix, equalizer, DJ, settings, branding and release readiness. Then continue with artwork/sorting, Smart Mix, equalizer, DJ, settings, branding and release readiness.
 
 ## Build and files
 - Main branch: main.
 - MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
 - CI: .github/workflows/android.yml; debug artifact M-Player-debug.
-- Latest code commit: f694b46178a9555f0ed879039ff7c310b4434b4d.
+- Latest implementation commits: `f295a77c5df81957054c66933a906cd6006b793b` (service), `047afa348c55b52e0968ac010d0a7f79fe2d38f0` (dependencies), `8c6f1c92d007b01cb5cce39cb8da7d3a348a4160` (manifest).
 - Latest Actions run: 41729312397, queued when checked; verify its final conclusion before relying on the build.
 - Scaffold: settings.gradle.kts, build.gradle.kts, gradle.properties, app/build.gradle.kts, app/src/main/AndroidManifest.xml.
 
