@@ -42,7 +42,7 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Library multi-select, visible select-all/deselect-all, add selected songs to a destination album.
 - Media3 ExoPlayer/Session dependencies, PlaybackService hosting ExoPlayer + MediaSession, foreground playback permissions and manifest service declaration.
 - Library sorting modes (title A–Z/Z–A, artist, album, duration ascending/descending), persisted in SharedPreferences and applied after search/favorite/album filters.
-- Smart Mix home quick-access tile: builds a randomized playlist from favorites only, with a persisted previous-first-track guard to avoid starting two consecutive mixes with the same song (commit `b0822ef62d40cd14bd9a34da76ce01176ea40466`; CI status pending verification).
+- Smart Mix home quick-access tile: builds a randomized playlist from favorites only, with a persisted previous-first-track guard to avoid starting two consecutive mixes with the same song (commit `b0822ef62d40cd14bd9a34da76ce01176ea40466`; CI succeeded in run `41736421878`).
 - MainActivity now connects to PlaybackService through MediaController; track taps set a Media3 playlist and play; player state drives the basic now-playing controls; previous/next/stop/play/pause call the controller.
 
 ## Partial / not yet implemented
@@ -52,10 +52,11 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Background service notification/system controls need runtime validation on Poco M3.
 - Playback queue currently mirrors the scanned library when a track is selected; advanced queue editing is not implemented.
 - Supplied logo not yet in resources/launcher icon.
-- Sorting and Smart Mix are implemented in code; Smart Mix build verification is pending. Sorting was previously included in successful Build 47.
+- Sorting and Smart Mix are implemented in code; Build 47 and Smart Mix CI run `41736421878` succeeded.
 - Embedded/per-track artwork, album workflows, and playback controls are implemented in code but need final device validation.
 - Supplied logo asset is still not in Android resources/launcher icon; only a temporary text M is shown in the app header.
-- Equalizer, DJ mode, complete settings/language/RTL polish, release signing and device tests remain.
+- Language choice is now persisted, and the last main page is restored on app launch (commit `574a32d43ebd72a5dc51e4ee0fb596b883f2bcfb`; CI pending at the time of implementation). Full RTL/LTR review and a dedicated settings UI remain.
+- Equalizer, DJ mode, sleep timer, privacy/about, release signing and device tests remain.
 
 ## Exact next task
 1. Add the supplied headphone/M logo to Android resources and use it for the launcher icon and in-app brand mark.
@@ -69,7 +70,7 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
 - PlaybackService: app/src/main/java/com/mplayer/app/PlaybackService.kt.
 - CI: .github/workflows/android.yml; debug artifact M-Player-debug.
-- Latest Smart Mix code commit: `b0822ef62d40cd14bd9a34da76ce01176ea40466`.
+- Latest code commit: `574a32d43ebd72a5dc51e4ee0fb596b883f2bcfb` (language persistence and last main page restoration).
 - Smart Mix documentation commit: `28b8bb7a67fb706f9336ae7c2a67152bda3c0f20`.
 - Latest Actions result must be checked for the Smart Mix code commit; do not treat it as verified until CI succeeds.
 
