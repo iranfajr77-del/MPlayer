@@ -31,36 +31,42 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Settings: audio/equalizer, DJ, playback, sleep timer, library, notifications, privacy, about, language.
 - Offline; no paid APIs or servers. Preserve data across upgrades; stable package ID and persistent release signing key needed.
 
-## Current state — 2026-11-04
-Implemented in code, not device-tested:
-- Android scaffold, Compose home/library UI, MediaStore scan.
-- Basic MediaPlayer playback and play/pause, stop, previous/next, auto-next.
-- Search in library/favorites.
+## Implemented in code (not device-tested)
+- Android scaffold, Compose home/library UI, MediaStore audio scanning.
+- Basic search across library/favorites.
 - Favorite IDs persisted in SharedPreferences.
-- Basic album persistence, two-column grid, create/rename/delete.
-- Album detail supports viewing assigned tracks, adding multiple real library tracks through checkbox selection, a Select all/Deselect all action for the currently visible (search-filtered) tracks, saving membership, and removing tracks from the album without deleting source audio.
-- Album covers can be selected from the gallery while creating/editing an album; the URI and persistable read permission are retained, and cover images display in the two-column grid and album detail. Existing albums without covers remain compatible.
+- User album persistence, two-column grid, create/rename/delete.
+- Album detail: add/remove multiple real library tracks, select all/deselect all for visible filtered tracks, persist membership without touching source audio.
+- Album gallery cover selection and display, with persisted read URI permission.
+- Library multi-select, visible select-all/deselect-all, add selected songs to a destination album.
+- Media3 ExoPlayer/Session dependencies, PlaybackService hosting ExoPlayer + MediaSession, foreground playback permissions and manifest service declaration.
+- MainActivity now connects to PlaybackService through MediaController; track taps set a Media3 playlist and play; player state drives the basic now-playing controls; previous/next/stop/play/pause call the controller.
 
-Incomplete/partial:
-- Select-all in album assignment.
-- Playback remains basic; no Media3 foreground playback service, queue, seek, repeat/shuffle, or media notification.
+## Partial / not yet implemented
+- Media3 controller integration has just been committed and awaits CI verification; no real-device testing.
+- Seek/progress, repeat/shuffle controls and dedicated queue UI not yet implemented.
+- Background service notification/system controls need runtime validation on Poco M3.
+- Playback queue currently mirrors the scanned library when a track is selected; advanced queue editing is not implemented.
 - Supplied logo not yet in resources/launcher icon.
-- Sorting, multi-select library, artwork, Smart Mix, settings, RTL polish, equalizer, DJ, release signing and device tests remain.
+- Sorting, embedded/per-track artwork, Smart Mix, settings/language/RTL polish, equalizer, DJ, release signing and device tests remain.
 
 ## Exact next task
-Next, connect MainActivity to PlaybackService through MediaController; move play/pause/next/previous/stop to the Media3 queue, add seek/progress and repeat/shuffle UI, and verify service/notification behavior. Then continue with artwork/sorting, Smart Mix, equalizer, DJ, settings, branding and release readiness. Then continue with artwork/sorting, Smart Mix, equalizer, DJ, settings, branding and release readiness.
+1. Check Actions for commit `5fc5c04f4a851f4cb784c7bde25a0d73bb5bd219` and subsequent Media3 dependency/manifest commits. Diagnose and fix any compile errors before adding features.
+2. Add playback position/duration progress and seek, repeat modes and shuffle, plus a queue view using MediaController.
+3. Verify media notification/background behavior in a later Poco M3 device test.
+4. Continue artwork/sorting, Smart Mix, equalizer, DJ, settings, branding and release readiness.
 
 ## Build and files
 - Main branch: main.
 - MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
+- PlaybackService: app/src/main/java/com/mplayer/app/PlaybackService.kt.
 - CI: .github/workflows/android.yml; debug artifact M-Player-debug.
-- Latest implementation commits: `f295a77c5df81957054c66933a906cd6006b793b` (service), `047afa348c55b52e0968ac010d0a7f79fe2d38f0` (dependencies), `8c6f1c92d007b01cb5cce39cb8da7d3a348a4160` (manifest).
-- Latest Actions run: 41729312397, queued when checked; verify its final conclusion before relying on the build.
-- Scaffold: settings.gradle.kts, build.gradle.kts, gradle.properties, app/build.gradle.kts, app/src/main/AndroidManifest.xml.
+- Latest playback integration commit: `5fc5c04f4a851f4cb784c7bde25a0d73bb5bd219`.
+- Latest Actions run at handoff update: queued; verify its final conclusion.
 
 ## Mandatory maintenance after each milestone
 1. Update this file with current implementation state and exact next task.
-2. Append a dated entry to DEVELOPMENT_LOG.md: what changed, files, commit SHA, CI status, and limitations.
+2. Append a dated entry to DEVELOPMENT_LOG.md: what changed, files, commit SHA, CI status, limitations.
 3. Separate implemented, partial, and not-started features.
 4. Never call a feature complete merely because CI passes.
 
