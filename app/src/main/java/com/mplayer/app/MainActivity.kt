@@ -90,8 +90,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MPlayerApp() {
     val context = LocalContext.current
-    var isPersian by rememberSaveable { mutableStateOf(true) }
-    var selectedTab by rememberSaveable { mutableStateOf("home") }
+    val preferences = remember { context.getSharedPreferences("mplayer_user_data", android.content.Context.MODE_PRIVATE) }
+    var isPersian by rememberSaveable { mutableStateOf(preferences.getBoolean("ui_is_persian", true)) }
+    var selectedTab by rememberSaveable { mutableStateOf(preferences.getString("last_selected_tab", "home") ?: "home") }
     var songs by remember { mutableStateOf(emptyList<MusicTrack>()) }
     var permissionDenied by remember { mutableStateOf(false) }
     var currentIndex by rememberSaveable { mutableIntStateOf(-1) }
@@ -106,7 +107,6 @@ private fun MPlayerApp() {
     var shuffleEnabled by remember { mutableStateOf(false) }
     var repeatMode by remember { mutableIntStateOf(Player.REPEAT_MODE_OFF) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val preferences = remember { context.getSharedPreferences("mplayer_user_data", android.content.Context.MODE_PRIVATE) }
     var sortMode by rememberSaveable { mutableStateOf(preferences.getString("library_sort_mode", "title_asc") ?: "title_asc") }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var favoriteIds by remember { mutableStateOf(preferences.getStringSet("favorite_ids", emptySet())?.toSet() ?: emptySet()) }
@@ -123,6 +123,12 @@ private fun MPlayerApp() {
     var librarySelectionMode by rememberSaveable { mutableStateOf(false) }
     var selectedLibraryIds by remember { mutableStateOf(setOf<Long>()) }
     var showAddToAlbumDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(isPersian) { preferences.edit().putBoolean("ui_is_persian", isPersian).apply() }
+    LaunchedEffect(selectedTab) {
+        val restorableTab = if (selectedTab == "album") "home" else selectedTab
+        preferences.edit().putString("last_selected_tab", restorableTab).apply()
+    }
+
     fun toggleFavorite(id: Long) {
         val updated = favoriteIds.toMutableSet()
         if (!updated.add(id.toString())) updated.remove(id.toString())
