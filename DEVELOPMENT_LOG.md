@@ -165,3 +165,10 @@ After every meaningful implementation, decision, or CI result:
 - Added a persistent sleep timer with 15, 30, 45 and 60 minute choices and cancellation. Its end timestamp is stored in SharedPreferences; when the deadline is reached the MediaController is asked to pause.
 - Sleep timer code commit: `c0d88f1b8f5f7c93b2bd70967ccd7f33acebb8b6`; GitHub Actions run `41737599825` (Build 55) was in progress at the time of this log update.
 - Limitations: timer behavior, process-restart behavior, and actual playback pause are not yet tested on Poco M3. Equalizer, DJ mode, launcher/in-app supplied logo, full RTL/LTR review, release signing and final device validation remain.
+
+
+## 2026-11-04 — Sleep timer reconnect reliability
+- Updated `MainActivity.kt` so the sleep-timer coroutine also observes `mediaController`; if the playback controller connects or reconnects while a timer is active, the deadline is recalculated and the latest controller receives the pause command.
+- Feature commit: `16aed5f0c8a86a2c135cbece0c117be7792d81d5`.
+- Build 55 for the original persistent sleep-timer implementation completed successfully (run `41737599825`). The reconnect-fix commit triggers a new CI run; pending at log update.
+- Limitation: timer behavior still requires runtime testing on the Poco M3; CI does not validate real audio playback or background lifecycle.
