@@ -96,6 +96,7 @@ private fun MPlayerApp() {
     var playbackError by remember { mutableStateOf(false) }
     var playbackPosition by remember { mutableLongStateOf(0L) }
     var playbackDuration by remember { mutableLongStateOf(0L) }
+    var isSeeking by remember { mutableStateOf(false) }
     var queueDialog by remember { mutableStateOf(false) }
     var shuffleEnabled by remember { mutableStateOf(false) }
     var repeatMode by remember { mutableIntStateOf(Player.REPEAT_MODE_OFF) }
@@ -225,7 +226,7 @@ private fun MPlayerApp() {
         while (true) {
             val controller = mediaController
             if (controller != null) {
-                playbackPosition = controller.currentPosition.coerceAtLeast(0L)
+                if (!isSeeking) playbackPosition = controller.currentPosition.coerceAtLeast(0L)
                 playbackDuration = controller.duration.takeIf { it > 0L } ?: 0L
                 shuffleEnabled = controller.shuffleModeEnabled
                 repeatMode = controller.repeatMode
@@ -438,8 +439,8 @@ private fun MPlayerApp() {
                             if (playbackDuration > 0L) {
                                 Slider(
                                     value = playbackPosition.coerceIn(0L, playbackDuration).toFloat(),
-                                    onValueChange = { playbackPosition = it.toLong() },
-                                    onValueChangeFinished = { mediaController?.seekTo(playbackPosition) },
+                                    onValueChange = { isSeeking = true; playbackPosition = it.toLong() },
+                                    onValueChangeFinished = { mediaController?.seekTo(playbackPosition); isSeeking = false },
                                     valueRange = 0f..playbackDuration.toFloat(),
                                     colors = SliderDefaults.colors(thumbColor = NeonGreen, activeTrackColor = NeonGreen, inactiveTrackColor = Color(0xFF465047))
                                 )
