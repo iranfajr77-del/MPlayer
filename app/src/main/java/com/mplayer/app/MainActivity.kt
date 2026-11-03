@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ArrowBack
@@ -83,6 +85,8 @@ private fun MPlayerApp() {
     var albumName by rememberSaveable { mutableStateOf("") }
     var editingAlbumId by remember { mutableStateOf<String?>(null) }
     var openedAlbumId by rememberSaveable { mutableStateOf<String?>(null) }
+    var addingTracks by rememberSaveable { mutableStateOf(false) }
+    var selectedTrackIds by remember { mutableStateOf(setOf<Long>()) }
     fun toggleFavorite(id: Long) {
         val updated = favoriteIds.toMutableSet()
         if (!updated.add(id.toString())) updated.remove(id.toString())
@@ -169,7 +173,24 @@ private fun MPlayerApp() {
                         Text(if (selectedTab == "favorites") { if (isPersian) "علاقه‌مندی‌ها" else "Favorites" } else if (selectedTab == "album") { albums.firstOrNull { it.id == openedAlbumId }?.name ?: if (isPersian) "آلبوم" else "Album" } else { if (isPersian) "همه آهنگ‌ها" else "All Songs" }, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                     }
                     val activeAlbum = albums.firstOrNull { it.id == openedAlbumId }
-                    val visibleSongs = songs.filter { song -> (selectedTab != "favorites" || favoriteIds.contains(song.id.toString())) && (selectedTab != "album" || activeAlbum?.trackIds?.contains(song.id) == true) && (searchQuery.isBlank() || song.title.contains(searchQuery, true) || song.artist.contains(searchQuery, true) || song.album.contains(searchQuery, true)) }
+                    val visibleSongs = songs.filter { song -> (selectedTab != "favorites" || favoriteIds.contains(song.id.toString())) && (selectedTab != "album" || addingTracks || activeAlbum?.trackIds?.contains(song.id) == true) && (searchQuery.isBlank() || song.title.contains(searchQuery, true) || song.artist.contains(searchQuery, true) || song.album.contains(searchQuery, true)) }
+                    if (selectedTab == "album" && activeAlbum != null) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = { addingTracks = !addingTracks; selectedTrackIds = emptySet(); searchQuery = "" }, colors = ButtonDefaults.buttonColors(containerColor = if (addingTracks) Orange else NeonGreen, contentColor = MBlack)) {
+                                Icon(if (addingTracks) Icons.Default.Close else Icons.Default.Add, null)
+                                Text(if (addingTracks) { if (isPersian) "انصراف" else "Cancel" } else { if (isPersian) "افزودن آهنگ" else "Add songs" })
+                            }
+                            if (addingTracks) Button(onClick = {
+                                albums = albums.map { album -> if (album.id == activeAlbum.id) album.copy(trackIds = album.trackIds + selectedTrackIds) else album }
+                                saveAlbums(preferences, albums)
+                                selectedTrackIds = emptySet()
+                                addingTracks = false
+                            }, enabled = selectedTrackIds.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = NeonGreen, contentColor = MBlack)) {
+                                Icon(Icons.Default.Check, null)
+                                Text(if (isPersian) "افزودن ${selectedTrackIds.size}" else "Add ${selectedTrackIds.size}")
+                            }
+                        }
+                    }
                     Text(if (isPersian) "${visibleSongs.size} آهنگ" else "${visibleSongs.size} songs", color = Color(0xFF9BA49D), fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp, bottom = 8.dp))
                     OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp), placeholder = { Text(if (isPersian) "جست‌وجوی آهنگ، خواننده یا آلبوم" else "Search songs, artists or albums") }, leadingIcon = { Icon(Icons.Default.Search, null, tint = NeonGreen) }, singleLine = true, shape = RoundedCornerShape(14.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NeonGreen, unfocusedBorderColor = Color(0xFF39423B), focusedTextColor = SoftWhite, unfocusedTextColor = SoftWhite))
                     if (songs.isEmpty() || visibleSongs.isEmpty()) {
@@ -183,7 +204,32 @@ private fun MPlayerApp() {
                         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             itemsIndexed(visibleSongs, key = { _, song -> song.id }) { _, song ->
                                 val index = songs.indexOfFirst { it.id == song.id }
-                                SongRow(song, isPersian, index == currentIndex, isPlaying, favoriteIds.contains(song.id.toString()), { playTrack(index) }, { toggleFavorite(song.id) })
+                                if (selectedTab == "album" && !addingTracks) {
+                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                        Box(Modifier.weight(1f)) {
+                                            SongRow(song, isPersian, index == currentIndex, isPlaying, favoriteIds.contains(song.id.toString()), { playTrack(index) }, { toggleFavorite(song.id) })
+                                        }
+                                        IconButton(onClick = {
+                                            val albumId = activeAlbum?.id
+                                            if (albumId != null) {
+                                                albums = albums.map { album -> if (album.id == albumId) album.copy(trackIds = album.trackIds - song.id) else album }
+                                                saveAlbums(preferences, albums)
+                                            }
+                                        }) { Icon(Icons.Default.Close, contentDescription = "Remove from album", tint = Orange) }
+                                    }
+                                } else if (selectedTab == "album" && addingTracks) {
+                                    Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).clickable {
+                                        selectedTrackIds = if (selectedTrackIds.contains(song.id)) selectedTrackIds - song.id else selectedTrackIds + song.id
+                                    }.padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(checked = selectedTrackIds.contains(song.id), onCheckedChange = { checked -> selectedTrackIds = if (checked) selectedTrackIds + song.id else selectedTrackIds - song.id }, colors = CheckboxDefaults.colors(checkedColor = NeonGreen, checkmarkColor = MBlack))
+                                        Column(Modifier.weight(1f).padding(8.dp)) {
+                                            Text(song.title, color = SoftWhite, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(song.artist, color = Color(0xFF9BA49D), fontSize = 11.sp)
+                                        }
+                                    }
+                                } else {
+                                    SongRow(song, isPersian, index == currentIndex, isPlaying, favoriteIds.contains(song.id.toString()), { playTrack(index) }, { toggleFavorite(song.id) })
+                                }
                             }
                         }
                         TextButton(onClick = { refreshSongs() }, modifier = Modifier.align(Alignment.End)) { Text(if (isPersian) "اسکن دوباره" else "Rescan", color = NeonGreen) }
