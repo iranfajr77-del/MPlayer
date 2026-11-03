@@ -94,6 +94,9 @@ private fun MPlayerApp() {
     var openedAlbumId by rememberSaveable { mutableStateOf<String?>(null) }
     var addingTracks by rememberSaveable { mutableStateOf(false) }
     var selectedTrackIds by remember { mutableStateOf(setOf<Long>()) }
+    var librarySelectionMode by rememberSaveable { mutableStateOf(false) }
+    var selectedLibraryIds by remember { mutableStateOf(setOf<Long>()) }
+    var showAddToAlbumDialog by remember { mutableStateOf(false) }
     fun toggleFavorite(id: Long) {
         val updated = favoriteIds.toMutableSet()
         if (!updated.add(id.toString())) updated.remove(id.toString())
@@ -187,8 +190,9 @@ private fun MPlayerApp() {
                 Spacer(Modifier.height(20.dp))
                 if (selectedTab == "library" || selectedTab == "favorites" || selectedTab == "album") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { selectedTab = "home" }) { Icon(Icons.Default.ArrowBack, "Back", tint = NeonGreen) }
-                        Text(if (selectedTab == "favorites") { if (isPersian) "علاقه‌مندی‌ها" else "Favorites" } else if (selectedTab == "album") { albums.firstOrNull { it.id == openedAlbumId }?.name ?: if (isPersian) "آلبوم" else "Album" } else { if (isPersian) "همه آهنگ‌ها" else "All Songs" }, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { selectedTab = "home"; librarySelectionMode = false; selectedLibraryIds = emptySet() }) { Icon(Icons.Default.ArrowBack, "Back", tint = NeonGreen) }
+                        Text(if (selectedTab == "favorites") { if (isPersian) "علاقه‌مندی‌ها" else "Favorites" } else if (selectedTab == "album") { albums.firstOrNull { it.id == openedAlbumId }?.name ?: if (isPersian) "آلبوم" else "Album" } else { if (isPersian) "همه آهنگ‌ها" else "All Songs" }, modifier = Modifier.weight(1f), fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                        if (selectedTab == "library") TextButton(onClick = { librarySelectionMode = !librarySelectionMode; selectedLibraryIds = emptySet(); searchQuery = "" }) { Text(if (librarySelectionMode) { if (isPersian) "پایان" else "Done" } else { if (isPersian) "انتخاب" else "Select" }, color = Orange, fontWeight = FontWeight.Bold) }
                     }
                     val activeAlbum = albums.firstOrNull { it.id == openedAlbumId }
                     if (selectedTab == "album" && activeAlbum != null && !addingTracks) {
@@ -204,6 +208,18 @@ private fun MPlayerApp() {
                         }
                     }
                     val visibleSongs = songs.filter { song -> (selectedTab != "favorites" || favoriteIds.contains(song.id.toString())) && (selectedTab != "album" || addingTracks || activeAlbum?.trackIds?.contains(song.id) == true) && (searchQuery.isBlank() || song.title.contains(searchQuery, true) || song.artist.contains(searchQuery, true) || song.album.contains(searchQuery, true)) }
+                    if (selectedTab == "library" && librarySelectionMode) {
+                        Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(if (isPersian) "\${selectedLibraryIds.size} آهنگ انتخاب‌شده" else "\${selectedLibraryIds.size} selected", color = Orange, fontSize = 12.sp)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(onClick = {
+                                    val visibleIds = visibleSongs.map { it.id }.toSet()
+                                    selectedLibraryIds = if (visibleIds.isNotEmpty() && visibleIds.all { selectedLibraryIds.contains(it) }) selectedLibraryIds - visibleIds else selectedLibraryIds + visibleIds
+                                }, enabled = visibleSongs.isNotEmpty()) { Text(if (visibleSongs.isNotEmpty() && visibleSongs.all { selectedLibraryIds.contains(it.id) }) { if (isPersian) "لغو همه" else "Deselect all" } else { if (isPersian) "انتخاب همه" else "Select all" }, color = NeonGreen) }
+                                Button(onClick = { showAddToAlbumDialog = true }, enabled = selectedLibraryIds.isNotEmpty() && albums.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = NeonGreen, contentColor = MBlack)) { Text(if (isPersian) "افزودن به آلبوم" else "Add to album") }
+                            }
+                        }
+                    }
                     if (selectedTab == "album" && activeAlbum != null) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(onClick = { addingTracks = !addingTracks; selectedTrackIds = emptySet(); searchQuery = "" }, colors = ButtonDefaults.buttonColors(containerColor = if (addingTracks) Orange else NeonGreen, contentColor = MBlack)) {
@@ -268,6 +284,17 @@ private fun MPlayerApp() {
                                             Text(song.title, color = SoftWhite, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                             Text(song.artist, color = Color(0xFF9BA49D), fontSize = 11.sp)
                                         }
+                                    }
+                                } else if (selectedTab == "library" && librarySelectionMode) {
+                                    Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(14.dp)).clickable {
+                                        selectedLibraryIds = if (selectedLibraryIds.contains(song.id)) selectedLibraryIds - song.id else selectedLibraryIds + song.id
+                                    }.padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(checked = selectedLibraryIds.contains(song.id), onCheckedChange = { checked -> selectedLibraryIds = if (checked) selectedLibraryIds + song.id else selectedLibraryIds - song.id }, colors = CheckboxDefaults.colors(checkedColor = NeonGreen, checkmarkColor = MBlack))
+                                        Column(Modifier.weight(1f).padding(8.dp)) {
+                                            Text(song.title, color = SoftWhite, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text("\${song.artist} • \${song.album}", color = Color(0xFF9BA49D), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        Text(formatDuration(song.duration), color = Orange, fontSize = 11.sp)
                                     }
                                 } else {
                                     SongRow(song, isPersian, index == currentIndex, isPlaying, favoriteIds.contains(song.id.toString()), { playTrack(index) }, { toggleFavorite(song.id) })
@@ -344,6 +371,28 @@ private fun MPlayerApp() {
                         }
                     }
                 }
+            }
+            if (showAddToAlbumDialog) {
+                AlertDialog(onDismissRequest = { showAddToAlbumDialog = false }, containerColor = Panel, titleContentColor = SoftWhite, textContentColor = SoftWhite,
+                    title = { Text(if (isPersian) "انتخاب آلبوم مقصد" else "Choose destination album") },
+                    text = { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        albums.forEach { album ->
+                            TextButton(onClick = {
+                                albums = albums.map { item -> if (item.id == album.id) item.copy(trackIds = item.trackIds + selectedLibraryIds) else item }
+                                saveAlbums(preferences, albums)
+                                showAddToAlbumDialog = false
+                                librarySelectionMode = false
+                                selectedLibraryIds = emptySet()
+                            }, modifier = Modifier.fillMaxWidth()) {
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Album, null, tint = NeonGreen)
+                                    Text(album.name, color = SoftWhite, modifier = Modifier.weight(1f).padding(start = 10.dp))
+                                    Text("\${album.trackIds.size}", color = Orange)
+                                }
+                            }
+                        }
+                    } },
+                    confirmButton = { TextButton(onClick = { showAddToAlbumDialog = false }) { Text(if (isPersian) "بستن" else "Close", color = Orange) } })
             }
             if (showAlbumDialog) {
                 AlertDialog(onDismissRequest = { showAlbumDialog = false }, containerColor = Panel, titleContentColor = SoftWhite, textContentColor = SoftWhite,
