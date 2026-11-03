@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.ComponentName
 import android.net.Uri
 import android.graphics.BitmapFactory
+import android.media.audiofx.Equalizer
 import android.content.ContentUris
 import android.content.pm.PackageManager
 import androidx.media3.common.MediaItem
@@ -126,6 +127,7 @@ private fun MPlayerApp() {
     var selectedLibraryIds by remember { mutableStateOf(setOf<Long>()) }
     var showAddToAlbumDialog by remember { mutableStateOf(false) }
     var sleepTimerEndTime by rememberSaveable { mutableLongStateOf(preferences.getLong("sleep_timer_end", 0L)) }
+    var showEqualizer by remember { mutableStateOf(false) }
     LaunchedEffect(isPersian) { preferences.edit().putBoolean("ui_is_persian", isPersian).apply() }
     LaunchedEffect(selectedTab) {
         val restorableTab = if (selectedTab == "album") "home" else selectedTab
@@ -596,6 +598,7 @@ private fun MPlayerApp() {
                     QuickTile(if (isPersian) "همه آهنگ‌ها" else "All Songs") { selectedTab = "library" }
                     Spacer(Modifier.height(9.dp))
                     QuickTile(if (isPersian) "تنظیمات" else "Settings") { selectedTab = "settings" }
+                    QuickTile(if (isPersian) "اکولایزر واقعی" else "Audio equalizer") { showEqualizer = true }
                     Spacer(Modifier.height(9.dp))
                     QuickTile(if (isPersian) "علاقه‌مندی‌ها  •  ${favoriteIds.size}" else "Favorites  •  ${favoriteIds.size}") { selectedTab = "favorites"; searchQuery = "" }
                     if (favoriteIds.isNotEmpty()) {
@@ -664,6 +667,43 @@ private fun MPlayerApp() {
                         }
                     }
                 }
+            }
+            if (showEqualizer) {
+                val audioSessionId = preferences.getInt("audio_session_id", 0)
+                val equalizer = remember(showEqualizer, audioSessionId) {
+                    if (audioSessionId > 0) try { Equalizer(0, audioSessionId) } catch (_: Exception) { null } else null
+                }
+                DisposableEffect(equalizer) {
+                    onDispose { try { equalizer?.release() } catch (_: Exception) { } }
+                }
+                AlertDialog(
+                    onDismissRequest = { showEqualizer = false },
+                    containerColor = Panel,
+                    titleContentColor = SoftWhite,
+                    title = { Text(if (isPersian) "اکولایزر صوتی" else "Audio equalizer") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (equalizer == null) {
+                                Text(if (isPersian) "برای فعال شدن اکولایزر، ابتدا یک آهنگ پخش کن. ممکن است دستگاه از افکت اکولایزر پشتیبانی نکند." else "Start playback first. This device may not expose an equalizer effect.", color = Color(0xFF9BA49D), fontSize = 12.sp)
+                            } else {
+                                var enabled by remember(audioSessionId) { mutableStateOf(equalizer.enabled) }
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Text(if (isPersian) "فعال‌سازی افکت" else "Enable effect", color = SoftWhite)
+                                    Switch(checked = enabled, onCheckedChange = { enabled = it; try { equalizer.enabled = it } catch (_: Exception) { } })
+                                }
+                                (0 until equalizer.numberOfPresets.toInt()).take(8).forEach { index ->
+                                    TextButton(onClick = {
+                                        try { equalizer.usePreset(index.toShort()); enabled = true; equalizer.enabled = true } catch (_: Exception) { }
+                                    }, modifier = Modifier.fillMaxWidth()) {
+                                        Text(equalizer.getPresetName(index.toShort()), color = NeonGreen)
+                                    }
+                                }
+                                Text(if (isPersian) "پیش‌تنظیم‌ها مستقیماً روی صدای در حال پخش اعمال می‌شوند." else "Presets are applied directly to the active audio session.", color = Color(0xFF9BA49D), fontSize = 11.sp)
+                            }
+                        }
+                    },
+                    confirmButton = { TextButton(onClick = { showEqualizer = false }) { Text(if (isPersian) "بستن" else "Close", color = NeonGreen) } }
+                )
             }
             if (queueDialog) {
                 AlertDialog(
