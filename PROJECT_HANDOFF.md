@@ -43,7 +43,7 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - MainActivity now connects to PlaybackService through MediaController; track taps set a Media3 playlist and play; player state drives the basic now-playing controls; previous/next/stop/play/pause call the controller.
 
 ## Partial / not yet implemented
-- Media3 controller integration has just been committed and awaits CI verification; no real-device testing.
+- Media3 controller integration compiles successfully in CI; no real-device testing.
 - Seek/progress, repeat/shuffle controls and dedicated queue UI not yet implemented.
 - Background service notification/system controls need runtime validation on Poco M3.
 - Playback queue currently mirrors the scanned library when a track is selected; advanced queue editing is not implemented.
@@ -51,17 +51,16 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Sorting, embedded/per-track artwork, Smart Mix, settings/language/RTL polish, equalizer, DJ, release signing and device tests remain.
 
 ## Exact next task
-1. Check Actions for commit `5fc5c04f4a851f4cb784c7bde25a0d73bb5bd219` and subsequent Media3 dependency/manifest commits. Diagnose and fix any compile errors before adding features.
-2. Add playback position/duration progress and seek, repeat modes and shuffle, plus a queue view using MediaController.
-3. Verify media notification/background behavior in a later Poco M3 device test.
-4. Continue artwork/sorting, Smart Mix, equalizer, DJ, settings, branding and release readiness.
+1. Verify CI for playback seek/repeat/shuffle/queue commit `1d040d99c2b194c468519853ab161f02b7b949da`; fix any compile issues.
+2. Inspect and improve queue behavior and player-state synchronization, then validate notification/background playback on Poco M3 later.
+3. Continue artwork/sorting, Smart Mix, equalizer, DJ, settings, branding and release readiness.
 
 ## Build and files
 - Main branch: main.
 - MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
 - PlaybackService: app/src/main/java/com/mplayer/app/PlaybackService.kt.
 - CI: .github/workflows/android.yml; debug artifact M-Player-debug.
-- Latest playback integration commit: `5fc5c04f4a851f4cb784c7bde25a0d73bb5bd219`.
+- Latest playback controls commit: `1d040d99c2b194c468519853ab161f02b7b949da`.
 - Latest Actions run at handoff update: queued; verify its final conclusion.
 
 ## Mandatory maintenance after each milestone
