@@ -172,3 +172,10 @@ After every meaningful implementation, decision, or CI result:
 - Feature commit: `16aed5f0c8a86a2c135cbece0c117be7792d81d5`.
 - Build 55 for the original persistent sleep-timer implementation completed successfully (run `41737599825`). The reconnect-fix commit triggers a new CI run; pending at log update.
 - Limitation: timer behavior still requires runtime testing on the Poco M3; CI does not validate real audio playback or background lifecycle.
+
+
+## 2026-11-04 — Custom playback queue builder
+- Updated `MainActivity.kt` with a queue-builder dialog opened from the playback queue. Users can select multiple tracks from the device library and append them to the current Media3 queue; selecting an item in the queue starts it, and non-current items can be removed.
+- Commit: `90a45725fe944039b546fffc54d5e37abda6f358`.
+- CI status: build triggered by the commit; awaiting result.
+- Limitations: queue reordering/drag-and-drop and named saved queues are not implemented. No Poco M3 runtime validation yet.
