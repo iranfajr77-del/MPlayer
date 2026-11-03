@@ -44,16 +44,16 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 
 ## Partial / not yet implemented
 - Media3 controller integration compiles successfully in CI; no real-device testing.
-- Seek/progress, repeat/shuffle controls and dedicated queue UI not yet implemented.
+- Playback controls are implemented in code, but queue behavior is still a simple view/editor over the full-library Media3 playlist; a dedicated custom queue builder and robust player-state edge-case handling remain.
 - Background service notification/system controls need runtime validation on Poco M3.
 - Playback queue currently mirrors the scanned library when a track is selected; advanced queue editing is not implemented.
 - Supplied logo not yet in resources/launcher icon.
 - Sorting, embedded/per-track artwork, Smart Mix, settings/language/RTL polish, equalizer, DJ, release signing and device tests remain.
 
 ## Exact next task
-1. Verify CI for playback seek/repeat/shuffle/queue commit `1d040d99c2b194c468519853ab161f02b7b949da`; fix any compile issues.
-2. Inspect and improve queue behavior and player-state synchronization, then validate notification/background playback on Poco M3 later.
-3. Continue artwork/sorting, Smart Mix, equalizer, DJ, settings, branding and release readiness.
+1. Verify CI for seek-slider drag stability commit `b41c4647592be985e09dee9ddd4d2a68c55c2974` (run `41733082738` was queued at last check).
+2. Improve player-state synchronization and queue edge cases; later validate background playback and media notification on Poco M3.
+3. Continue track artwork/sorting, Smart Mix, equalizer, DJ, settings/language/RTL, branding, and release readiness.
 
 ## Build and files
 - Main branch: main.
