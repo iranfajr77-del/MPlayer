@@ -487,7 +487,7 @@ private fun MPlayerApp() {
                             itemsIndexed((0 until (mediaController?.mediaItemCount ?: 0)).mapNotNull { index ->
                                 val item = try { mediaController?.getMediaItemAt(index) } catch (_: Exception) { null }
                                 item?.let { Triple(index, it.mediaMetadata.title?.toString() ?: "Unknown title", it.mediaMetadata.artist?.toString() ?: "Unknown artist") }
-                            }, key = { it.first }) { _, entry ->
+                            }, key = { _, item -> item.first }) { _, entry ->
                                 Row(
                                     Modifier.fillMaxWidth().background(if (entry.first == mediaController?.currentMediaItemIndex) Color(0xFF203321) else Panel, RoundedCornerShape(10.dp)).clickable {
                                         mediaController?.seekTo(entry.first, 0L)
