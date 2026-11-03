@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
@@ -107,6 +108,8 @@ private fun MPlayerApp() {
     val preferences = remember { context.getSharedPreferences("mplayer_user_data", android.content.Context.MODE_PRIVATE) }
     var favoriteIds by remember { mutableStateOf(preferences.getStringSet("favorite_ids", emptySet())?.toSet() ?: emptySet()) }
     var albums by remember { mutableStateOf(loadAlbums(preferences)) }
+    var trackArtworkOverrides by remember { mutableStateOf(loadTrackArtworkOverrides(preferences)) }
+    var selectedArtworkTrackId by remember { mutableStateOf<Long?>(null) }
     var showAlbumDialog by remember { mutableStateOf(false) }
     var albumName by rememberSaveable { mutableStateOf("") }
     var pendingCoverUri by rememberSaveable { mutableStateOf<String?>(null) }
@@ -133,6 +136,17 @@ private fun MPlayerApp() {
                 pendingCoverUri = uri.toString()
             }
         }
+    }
+
+    val trackArtworkPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        val trackId = selectedArtworkTrackId
+        if (uri != null && trackId != null) {
+            try { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) { }
+            val updated = trackArtworkOverrides + (trackId.toString() to uri.toString())
+            trackArtworkOverrides = updated
+            saveTrackArtworkOverrides(preferences, updated)
+        }
+        selectedArtworkTrackId = null
     }
 
     val audioPermission = if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
@@ -444,7 +458,7 @@ private fun MPlayerApp() {
                     Card(Modifier.fillMaxWidth().padding(top = 10.dp), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
                         Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                TrackArtwork(current.albumId, Modifier.size(42.dp))
+                                TrackArtwork(current.albumId, trackArtworkOverrides[current.id.toString()], Modifier.size(42.dp))
                                 Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
                                     Text(current.title, color = SoftWhite, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(current.artist, color = Color(0xFF9BA49D), fontSize = 11.sp, maxLines = 1)
@@ -575,6 +589,19 @@ private fun loadAlbums(prefs: android.content.SharedPreferences): List<UserAlbum
     } catch (_: Exception) { emptyList() }
 }
 
+private fun loadTrackArtworkOverrides(prefs: android.content.SharedPreferences): Map<String, String> {
+    return try {
+        val json = org.json.JSONObject(prefs.getString("track_artwork_overrides", "{}") ?: "{}")
+        json.keys().asSequence().associateWith { key -> json.getString(key) }
+    } catch (_: Exception) { emptyMap() }
+}
+
+private fun saveTrackArtworkOverrides(prefs: android.content.SharedPreferences, overrides: Map<String, String>) {
+    val json = org.json.JSONObject()
+    overrides.forEach { (trackId, uri) -> json.put(trackId, uri) }
+    prefs.edit().putString("track_artwork_overrides", json.toString()).apply()
+}
+
 private fun saveAlbums(prefs: android.content.SharedPreferences, albums: List<UserAlbum>) {
     val array = org.json.JSONArray()
     albums.forEach { album ->
@@ -603,37 +630,36 @@ private fun AlbumCover(uri: String?, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun TrackArtwork(albumId: Long, modifier: Modifier = Modifier) {
+private fun TrackArtwork(albumId: Long, customUri: String?, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    var bitmap by remember(albumId) { mutableStateOf<android.graphics.Bitmap?>(null) }
-    LaunchedEffect(albumId) {
-        bitmap = if (albumId > 0L) withContext(Dispatchers.IO) {
-            try {
-                val artUri = Uri.parse("content://media/external/audio/albumart/$albumId")
-                context.contentResolver.openInputStream(artUri)?.use { BitmapFactory.decodeStream(it) }
-            } catch (_: Exception) { null }
-        } else null
+    var bitmap by remember(albumId, customUri) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(albumId, customUri) {
+        bitmap = withContext(Dispatchers.IO) {
+            val customBitmap = try { customUri?.let { uri -> context.contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it) } } } catch (_: Exception) { null }
+            customBitmap ?: if (albumId > 0L) {
+                try { val artUri = Uri.parse("content://media/external/audio/albumart/$albumId"); context.contentResolver.openInputStream(artUri)?.use { BitmapFactory.decodeStream(it) } } catch (_: Exception) { null }
+            } else null
+        }
     }
     Box(modifier.background(Color(0xFF252D27), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
-        if (bitmap != null) {
-            Image(bitmap = bitmap!!.asImageBitmap(), contentDescription = "Track artwork", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        } else {
-            Icon(Icons.Default.MusicNote, null, tint = NeonGreen, modifier = Modifier.size(25.dp))
-        }
+        if (bitmap != null) Image(bitmap = bitmap!!.asImageBitmap(), contentDescription = "Track artwork", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        else Icon(Icons.Default.MusicNote, null, tint = NeonGreen, modifier = Modifier.size(25.dp))
     }
 }
 
 @Composable
-private fun SongRow(song: MusicTrack, isPersian: Boolean, selected: Boolean, playing: Boolean, isFavorite: Boolean, onClick: () -> Unit, onFavorite: () -> Unit) {
+private fun SongRow(song: MusicTrack, isPersian: Boolean, selected: Boolean, playing: Boolean, isFavorite: Boolean, artworkUri: String?, onClick: () -> Unit, onFavorite: () -> Unit, onChooseArtwork: () -> Unit, onResetArtwork: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(if (selected) Color(0xFF203321) else Panel, RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(46.dp).background(Color(0xFF252D27), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
-            TrackArtwork(song.albumId, Modifier.fillMaxSize())
+            TrackArtwork(song.albumId, artworkUri, Modifier.fillMaxSize())
         }
         Column(Modifier.weight(1f).padding(horizontal = 11.dp)) {
             Text(song.title, color = SoftWhite, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("${song.artist} • ${song.album}", color = Color(0xFF9BA49D), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Text(formatDuration(song.duration), color = Orange, fontSize = 11.sp)
+        IconButton(onClick = onChooseArtwork) { Icon(Icons.Default.Image, contentDescription = if (isPersian) "انتخاب کاور" else "Choose cover", tint = NeonGreen) }
+        if (artworkUri != null) IconButton(onClick = onResetArtwork) { Icon(Icons.Default.Delete, contentDescription = if (isPersian) "بازگشت به کاور اصلی" else "Restore original cover", tint = Orange) }
         IconButton(onClick = onFavorite) { Icon(if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, contentDescription = "Favorite", tint = if (isFavorite) Orange else Color(0xFF9BA49D)) }
     }
 }
