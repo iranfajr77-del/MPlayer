@@ -14,6 +14,8 @@ import androidx.media3.session.MediaSessionService
  */
 class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
+    private var fadeHandler: Handler? = null
+    private var fadeTask: Runnable? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -55,6 +57,8 @@ class PlaybackService : MediaSessionService() {
                 fadeHandler.postDelayed(this, 100L)
             }
         }
+        this.fadeHandler = fadeHandler
+        this.fadeTask = fadeTask
         fadeHandler.post(fadeTask)
         val audioPrefs = getSharedPreferences("mplayer_user_data", MODE_PRIVATE)
         fun saveAudioSessionId() {
@@ -84,6 +88,10 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        fadeTask?.let { fadeHandler?.removeCallbacks(it) }
+        fadeHandler?.removeCallbacksAndMessages(null)
+        fadeTask = null
+        fadeHandler = null
         mediaSession?.run {
             player.release()
             release()
