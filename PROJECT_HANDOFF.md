@@ -41,6 +41,8 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Per-track gallery cover override and reset; override URIs are persisted by track ID, custom artwork is preferred in track rows and now-playing display, and source audio is untouched (Build 43 CI success).
 - Library multi-select, visible select-all/deselect-all, add selected songs to a destination album.
 - Media3 ExoPlayer/Session dependencies, PlaybackService hosting ExoPlayer + MediaSession, foreground playback permissions and manifest service declaration.
+- Library sorting modes (title A–Z/Z–A, artist, album, duration ascending/descending), persisted in SharedPreferences and applied after search/favorite/album filters.
+- Smart Mix home quick-access tile: builds a randomized playlist from favorites only, with a persisted previous-first-track guard to avoid starting two consecutive mixes with the same song (commit `b0822ef62d40cd14bd9a34da76ce01176ea40466`; CI status pending verification).
 - MainActivity now connects to PlaybackService through MediaController; track taps set a Media3 playlist and play; player state drives the basic now-playing controls; previous/next/stop/play/pause call the controller.
 
 ## Partial / not yet implemented
@@ -50,20 +52,26 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Background service notification/system controls need runtime validation on Poco M3.
 - Playback queue currently mirrors the scanned library when a track is selected; advanced queue editing is not implemented.
 - Supplied logo not yet in resources/launcher icon.
-- Sorting, embedded/per-track artwork, Smart Mix, settings/language/RTL polish, equalizer, DJ, release signing and device tests remain.
+- Sorting and Smart Mix are implemented in code; Smart Mix build verification is pending. Sorting was previously included in successful Build 47.
+- Embedded/per-track artwork, album workflows, and playback controls are implemented in code but need final device validation.
+- Supplied logo asset is still not in Android resources/launcher icon; only a temporary text M is shown in the app header.
+- Equalizer, DJ mode, complete settings/language/RTL polish, release signing and device tests remain.
 
 ## Exact next task
-1. Implement library sorting controls and stable sort modes while preserving the current search/filter behavior and two-column album layout.
-2. Then continue Smart Mix, equalizer, DJ, settings/language/RTL, branding, and release readiness.
-3. During final device validation, test per-track gallery artwork selection, persistence after restart, reset to embedded artwork, and now-playing artwork on Poco M3; do not install intermediate builds.
+1. Add the supplied headphone/M logo to Android resources and use it for the launcher icon and in-app brand mark.
+2. Implement and validate the equalizer UI and device-supported audio effects, with safe fallbacks when the device does not expose an effect.
+3. Implement offline DJ mode with explicit performance limits and resource-safe playback.
+4. Finish settings, language/RTL persistence, sleep timer, privacy/about, and restore-last-page behavior.
+5. Prepare release signing and a final APK only after all planned work; then perform the full Poco M3 validation, including artwork URI persistence/reset and background playback.
 
 ## Build and files
 - Main branch: main.
 - MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
 - PlaybackService: app/src/main/java/com/mplayer/app/PlaybackService.kt.
 - CI: .github/workflows/android.yml; debug artifact M-Player-debug.
-- Latest playback controls commit: `1d040d99c2b194c468519853ab161f02b7b949da`.
-- Latest Actions run at handoff update: queued; verify its final conclusion.
+- Latest Smart Mix code commit: `b0822ef62d40cd14bd9a34da76ce01176ea40466`.
+- Smart Mix documentation commit: `28b8bb7a67fb706f9336ae7c2a67152bda3c0f20`.
+- Latest Actions result must be checked for the Smart Mix code commit; do not treat it as verified until CI succeeds.
 
 ## Mandatory maintenance after each milestone
 1. Update this file with current implementation state and exact next task.
