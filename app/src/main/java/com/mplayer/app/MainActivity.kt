@@ -106,9 +106,9 @@ private fun MPlayerApp() {
     var shuffleEnabled by remember { mutableStateOf(false) }
     var repeatMode by remember { mutableIntStateOf(Player.REPEAT_MODE_OFF) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    val preferences = remember { context.getSharedPreferences("mplayer_user_data", android.content.Context.MODE_PRIVATE) }
     var sortMode by rememberSaveable { mutableStateOf(preferences.getString("library_sort_mode", "title_asc") ?: "title_asc") }
     var sortMenuExpanded by remember { mutableStateOf(false) }
-    val preferences = remember { context.getSharedPreferences("mplayer_user_data", android.content.Context.MODE_PRIVATE) }
     var favoriteIds by remember { mutableStateOf(preferences.getStringSet("favorite_ids", emptySet())?.toSet() ?: emptySet()) }
     var albums by remember { mutableStateOf(loadAlbums(preferences)) }
     var trackArtworkOverrides by remember { mutableStateOf(loadTrackArtworkOverrides(preferences)) }
@@ -321,8 +321,8 @@ private fun MPlayerApp() {
                     val filteredSongs = songs.filter { song -> (selectedTab != "favorites" || favoriteIds.contains(song.id.toString())) && (selectedTab != "album" || addingTracks || activeAlbum?.trackIds?.contains(song.id) == true) && (searchQuery.isBlank() || song.title.contains(searchQuery, true) || song.artist.contains(searchQuery, true) || song.album.contains(searchQuery, true)) }
                     val visibleSongs = when (sortMode) {
                         "title_desc" -> filteredSongs.sortedByDescending { it.title.lowercase() }
-                        "artist_asc" -> filteredSongs.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.artist }.thenBy { it.title.lowercase() })
-                        "album_asc" -> filteredSongs.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.album }.thenBy { it.title.lowercase() })
+                        "artist_asc" -> filteredSongs.sortedWith(compareBy<MusicTrack, String>(String.CASE_INSENSITIVE_ORDER) { it.artist }.thenBy { it.title.lowercase() })
+                        "album_asc" -> filteredSongs.sortedWith(compareBy<MusicTrack, String>(String.CASE_INSENSITIVE_ORDER) { it.album }.thenBy { it.title.lowercase() })
                         "duration_asc" -> filteredSongs.sortedBy { it.duration }
                         "duration_desc" -> filteredSongs.sortedByDescending { it.duration }
                         else -> filteredSongs.sortedBy { it.title.lowercase() }
