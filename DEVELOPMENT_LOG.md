@@ -118,3 +118,11 @@ After every meaningful implementation, decision, or CI result:
 - Code commit: `b41c4647592be985e09dee9ddd4d2a68c55c2974`.
 - GitHub Actions run `41733082738` was queued at the time of this log update; verify its final result.
 - Limitations: this is a UI-state correction only; playback and seek behavior still require real-device testing on Poco M3. Queue still mirrors the library playlist rather than a fully custom queue builder.
+
+
+## 2026-11-04 — Media3 player-state synchronization
+- Updated `app/src/main/java/com/mplayer/app/MainActivity.kt`.
+- The periodic controller sync now checks the active Media3 media ID and reconciles the highlighted library index. It also clears stale playback position/duration and playing state when the controller has no current item, while preserving the seek-drag guard.
+- Code commit: `016bc5f09cc0c33b46bba837b161af0aee0f5ced`.
+- CI: triggered by the code commit; verify the run before relying on the build.
+- Limitations: not tested on Poco M3; if the playing track is removed from MediaStore it still cannot be represented in the library-based player bar. Queue remains a full-library playlist rather than a custom queue builder.
