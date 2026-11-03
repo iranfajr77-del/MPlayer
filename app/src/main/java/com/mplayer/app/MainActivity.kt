@@ -104,6 +104,8 @@ private fun MPlayerApp() {
     var playbackDuration by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
     var queueDialog by remember { mutableStateOf(false) }
+    var showQueuePicker by remember { mutableStateOf(false) }
+    var selectedQueueTrackIds by remember { mutableStateOf(setOf<Long>()) }
     var shuffleEnabled by remember { mutableStateOf(false) }
     var repeatMode by remember { mutableIntStateOf(Player.REPEAT_MODE_OFF) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -670,7 +672,12 @@ private fun MPlayerApp() {
                     titleContentColor = SoftWhite,
                     title = { Text(if (isPersian) "صف پخش" else "Playback queue") },
                     text = {
-                        LazyColumn(modifier = Modifier.heightIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { selectedQueueTrackIds = emptySet(); showQueuePicker = true }, colors = ButtonDefaults.buttonColors(containerColor = NeonGreen, contentColor = MBlack), modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.Add, null)
+                            Text(if (isPersian) "افزودن آهنگ از کتابخانه" else "Add songs from library")
+                        }
+                        LazyColumn(modifier = Modifier.heightIn(max = 360.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             itemsIndexed((0 until (mediaController?.mediaItemCount ?: 0)).mapNotNull { index ->
                                 val item = try { mediaController?.getMediaItemAt(index) } catch (_: Exception) { null }
                                 item?.let { Triple(index, it.mediaMetadata.title?.toString() ?: "Unknown title", it.mediaMetadata.artist?.toString() ?: "Unknown artist") }
@@ -692,8 +699,73 @@ private fun MPlayerApp() {
                                 }
                             }
                         }
+                        }
                     },
                     confirmButton = { TextButton(onClick = { queueDialog = false }) { Text(if (isPersian) "بستن" else "Close", color = NeonGreen) } }
+                )
+            }
+            if (showQueuePicker) {
+                AlertDialog(
+                    onDismissRequest = { showQueuePicker = false },
+                    containerColor = Panel,
+                    titleContentColor = SoftWhite,
+                    textContentColor = SoftWhite,
+                    title = { Text(if (isPersian) "ساخت صف پخش" else "Build playback queue") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(if (isPersian) "${selectedQueueTrackIds.size} آهنگ انتخاب شده" else "${selectedQueueTrackIds.size} songs selected", color = Orange, fontSize = 12.sp)
+                            LazyColumn(modifier = Modifier.heightIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                itemsIndexed(songs, key = { _, song -> song.id }) { _, song ->
+                                    val selected = selectedQueueTrackIds.contains(song.id)
+                                    Row(
+                                        Modifier.fillMaxWidth()
+                                            .background(if (selected) Color(0xFF203321) else Panel, RoundedCornerShape(10.dp))
+                                            .clickable {
+                                                selectedQueueTrackIds = if (selected) selectedQueueTrackIds - song.id else selectedQueueTrackIds + song.id
+                                            }.padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(song.title, color = SoftWhite, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(song.artist, color = Color(0xFF9BA49D), fontSize = 11.sp, maxLines = 1)
+                                        }
+                                        Icon(if (selected) Icons.Default.Check else Icons.Default.Add, null, tint = if (selected) NeonGreen else Orange)
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val controller = mediaController
+                            val chosen = songs.filter { selectedQueueTrackIds.contains(it.id) }
+                            if (controller != null && chosen.isNotEmpty()) {
+                                val items = chosen.map { song ->
+                                    val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id)
+                                    MediaItem.Builder()
+                                        .setMediaId(song.id.toString())
+                                        .setUri(uri)
+                                        .setMediaMetadata(MediaMetadata.Builder().setTitle(song.title).setArtist(song.artist).setAlbumTitle(song.album).build())
+                                        .build()
+                                }
+                                val wasEmpty = controller.mediaItemCount == 0
+                                controller.addMediaItems(items)
+                                if (wasEmpty) {
+                                    controller.prepare()
+                                    controller.play()
+                                }
+                            }
+                            selectedQueueTrackIds = emptySet()
+                            showQueuePicker = false
+                        }, enabled = selectedQueueTrackIds.isNotEmpty()) {
+                            Text(if (isPersian) "افزودن به صف" else "Add to queue", color = NeonGreen)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showQueuePicker = false; selectedQueueTrackIds = emptySet() }) {
+                            Text(if (isPersian) "انصراف" else "Cancel", color = Orange)
+                        }
+                    }
                 )
             }
             if (showAddToAlbumDialog) {
