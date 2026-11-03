@@ -39,26 +39,22 @@ Implemented in code, not device-tested:
 - Favorite IDs persisted in SharedPreferences.
 - Basic album persistence, two-column grid, create/rename/delete.
 - Album detail supports viewing assigned tracks, adding multiple real library tracks through checkbox selection, saving membership, and removing tracks from the album without deleting source audio.
+- Album covers can be selected from the gallery while creating/editing an album; the URI and persistable read permission are retained, and cover images display in the two-column grid and album detail. Existing albums without covers remain compatible.
 
 Incomplete/partial:
-- Album gallery cover picker and cover display; select-all in album assignment.
+- Select-all in album assignment.
 - Playback remains basic; no Media3 foreground playback service, queue, seek, repeat/shuffle, or media notification.
 - Supplied logo not yet in resources/launcher icon.
 - Sorting, multi-select library, artwork, Smart Mix, settings, RTL polish, equalizer, DJ, release signing and device tests remain.
 
 ## Exact next task
-Complete album covers:
-1. Add an image picker for gallery selection.
-2. Persist selected cover URI per album, retaining permission to read it.
-3. Display cover thumbnails in the two-column album grid and album details.
-4. Ensure editing/deleting albums does not affect original gallery photos.
-Then add select-all and multi-select from library.
+Add select-all to album song assignment, then implement the broader library multi-select workflow. After that, prioritize the playback engine migration to Media3 background service and verify actual playback behavior on-device in the final test round.
 
 ## Build and files
 - Main branch: main.
 - MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
 - CI: .github/workflows/android.yml; debug artifact M-Player-debug.
-- Latest code commit: f42494256d8e629e9b800f944e9a60e49b0c318e.
+- Latest code commit: d4f4250129cd620e2d6b2fc56d58ca94192e07ce.
 - Latest Actions run: 41729312397, queued when checked; verify its final conclusion before relying on the build.
 - Scaffold: settings.gradle.kts, build.gradle.kts, gradle.properties, app/build.gradle.kts, app/src/main/AndroidManifest.xml.
 
