@@ -43,6 +43,11 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Shuffle
+import kotlinx.coroutines.delay
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -89,6 +94,11 @@ private fun MPlayerApp() {
     var isPlaying by remember { mutableStateOf(false) }
     var mediaController by remember { mutableStateOf<MediaController?>(null) }
     var playbackError by remember { mutableStateOf(false) }
+    var playbackPosition by remember { mutableLongStateOf(0L) }
+    var playbackDuration by remember { mutableLongStateOf(0L) }
+    var queueDialog by remember { mutableStateOf(false) }
+    var shuffleEnabled by remember { mutableStateOf(false) }
+    var repeatMode by remember { mutableIntStateOf(Player.REPEAT_MODE_OFF) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val preferences = remember { context.getSharedPreferences("mplayer_user_data", android.content.Context.MODE_PRIVATE) }
     var favoriteIds by remember { mutableStateOf(preferences.getStringSet("favorite_ids", emptySet())?.toSet() ?: emptySet()) }
@@ -192,8 +202,14 @@ private fun MPlayerApp() {
                 isPlaying = playing
             }
 
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                playbackDuration = controller?.duration?.takeIf { it > 0L } ?: 0L
+            }
+
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 currentIndex = songs.indexOfFirst { it.id.toString() == mediaItem?.mediaId }
+                playbackPosition = 0L
+                playbackDuration = controller?.duration?.takeIf { it > 0L } ?: 0L
             }
 
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
@@ -203,6 +219,19 @@ private fun MPlayerApp() {
         }
         controller?.addListener(listener)
         onDispose { controller?.removeListener(listener) }
+    }
+
+    LaunchedEffect(mediaController, isPlaying, currentIndex) {
+        while (true) {
+            val controller = mediaController
+            if (controller != null) {
+                playbackPosition = controller.currentPosition.coerceAtLeast(0L)
+                playbackDuration = controller.duration.takeIf { it > 0L } ?: 0L
+                shuffleEnabled = controller.shuffleModeEnabled
+                repeatMode = controller.repeatMode
+            }
+            delay(500L)
+        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -406,14 +435,79 @@ private fun MPlayerApp() {
                                 }) { Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, if (isPlaying) "Pause" else "Play", tint = NeonGreen, modifier = Modifier.size(32.dp)) }
                                 IconButton(onClick = { mediaController?.stop(); mediaController?.clearMediaItems(); isPlaying = false; currentIndex = -1 }) { Icon(Icons.Default.Stop, "Stop", tint = Orange) }
                             }
+                            if (playbackDuration > 0L) {
+                                Slider(
+                                    value = playbackPosition.coerceIn(0L, playbackDuration).toFloat(),
+                                    onValueChange = { playbackPosition = it.toLong() },
+                                    onValueChangeFinished = { mediaController?.seekTo(playbackPosition) },
+                                    valueRange = 0f..playbackDuration.toFloat(),
+                                    colors = SliderDefaults.colors(thumbColor = NeonGreen, activeTrackColor = NeonGreen, inactiveTrackColor = Color(0xFF465047))
+                                )
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(formatDuration(playbackPosition), color = Color(0xFF9BA49D), fontSize = 10.sp)
+                                    Text(formatDuration(playbackDuration), color = Color(0xFF9BA49D), fontSize = 10.sp)
+                                }
+                            }
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = { mediaController?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled; shuffleEnabled = it.shuffleModeEnabled } }) {
+                                    Icon(Icons.Default.Shuffle, "Shuffle", tint = if (shuffleEnabled) NeonGreen else SoftWhite)
+                                }
                                 IconButton(onClick = { mediaController?.seekToPreviousMediaItem() }) { Icon(Icons.Default.SkipPrevious, "Previous", tint = SoftWhite) }
                                 Text(if (playbackError) { if (isPersian) "خطا در پخش آهنگ" else "Playback error" } else { if (isPersian) "در حال پخش" else "Now playing" }, color = if (playbackError) Orange else NeonGreen, fontSize = 11.sp)
                                 IconButton(onClick = { mediaController?.seekToNextMediaItem() }) { Icon(Icons.Default.SkipNext, "Next", tint = SoftWhite) }
+                                IconButton(onClick = {
+                                    mediaController?.let { controller ->
+                                        controller.repeatMode = when (controller.repeatMode) {
+                                            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+                                            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+                                            else -> Player.REPEAT_MODE_OFF
+                                        }
+                                        repeatMode = controller.repeatMode
+                                    }
+                                }) { Icon(if (repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat, "Repeat", tint = if (repeatMode == Player.REPEAT_MODE_OFF) SoftWhite else NeonGreen) }
+                            }
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                TextButton(onClick = { queueDialog = true }) {
+                                    Icon(Icons.Default.QueueMusic, null, tint = NeonGreen)
+                                    Text(if (isPersian) "صف پخش (${mediaController?.mediaItemCount ?: 0})" else "Queue (${mediaController?.mediaItemCount ?: 0})", color = NeonGreen)
+                                }
                             }
                         }
                     }
                 }
+            }
+            if (queueDialog) {
+                AlertDialog(
+                    onDismissRequest = { queueDialog = false },
+                    containerColor = Panel,
+                    titleContentColor = SoftWhite,
+                    title = { Text(if (isPersian) "صف پخش" else "Playback queue") },
+                    text = {
+                        LazyColumn(modifier = Modifier.heightIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            itemsIndexed((0 until (mediaController?.mediaItemCount ?: 0)).mapNotNull { index ->
+                                val item = try { mediaController?.getMediaItemAt(index) } catch (_: Exception) { null }
+                                item?.let { Triple(index, it.mediaMetadata.title?.toString() ?: "Unknown title", it.mediaMetadata.artist?.toString() ?: "Unknown artist") }
+                            }, key = { it.first }) { _, entry ->
+                                Row(
+                                    Modifier.fillMaxWidth().background(if (entry.first == mediaController?.currentMediaItemIndex) Color(0xFF203321) else Panel, RoundedCornerShape(10.dp)).clickable {
+                                        mediaController?.seekTo(entry.first, 0L)
+                                        mediaController?.play()
+                                        queueDialog = false
+                                    }.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(entry.second, color = SoftWhite, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(entry.third, color = Color(0xFF9BA49D), fontSize = 11.sp, maxLines = 1)
+                                    }
+                                    if (entry.first == mediaController?.currentMediaItemIndex) Text(if (isPersian) "اکنون" else "Playing", color = NeonGreen, fontSize = 10.sp)
+                                    else IconButton(onClick = { mediaController?.removeMediaItem(entry.first) }) { Icon(Icons.Default.Close, "Remove from queue", tint = Orange) }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = { TextButton(onClick = { queueDialog = false }) { Text(if (isPersian) "بستن" else "Close", color = NeonGreen) } }
+                )
             }
             if (showAddToAlbumDialog) {
                 AlertDialog(onDismissRequest = { showAddToAlbumDialog = false }, containerColor = Panel, titleContentColor = SoftWhite, textContentColor = SoftWhite,
