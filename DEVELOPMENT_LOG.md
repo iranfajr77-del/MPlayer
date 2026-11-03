@@ -66,3 +66,12 @@ After every meaningful implementation, decision, or CI result:
 - Code commit: `d4f4250129cd620e2d6b2fc56d58ca94192e07ce`.
 - GitHub Actions run `41729754726` was queued when checked; final build result not yet known.
 - Limitations: cover rendering and persisted URI access have not been tested on Poco M3; very large gallery images may require memory/performance tuning. Select-all and full library multi-select remain unimplemented.
+
+
+## 2026-11-04 — Select all in album assignment
+- Updated `app/src/main/java/com/mplayer/app/MainActivity.kt`.
+- Added Select all/Deselect all for the currently visible tracks in an album's Add songs mode. The action respects the active search filter and preserves selections outside the visible filtered subset when toggling the visible set.
+- Added a selected-track count beside the action; the existing Add selected button saves membership.
+- Code commit: `20b7f33aed8dac09fa405bce5ee786f91654066b`.
+- CI status: pending at the time of this log update; recheck the latest Actions run.
+- Limitations: not device-tested; full library multi-select is still pending.
