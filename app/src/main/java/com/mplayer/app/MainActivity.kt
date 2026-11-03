@@ -2,11 +2,17 @@ package com.mplayer.app
 
 import android.Manifest
 import android.content.Intent
+import android.content.ComponentName
 import android.net.Uri
 import android.graphics.BitmapFactory
 import android.content.ContentUris
 import android.content.pm.PackageManager
-import android.media.MediaPlayer
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import java.util.concurrent.Executor
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -81,7 +87,7 @@ private fun MPlayerApp() {
     var permissionDenied by remember { mutableStateOf(false) }
     var currentIndex by rememberSaveable { mutableIntStateOf(-1) }
     var isPlaying by remember { mutableStateOf(false) }
-    var player by remember { mutableStateOf<MediaPlayer?>(null) }
+    var mediaController by remember { mutableStateOf<MediaController?>(null) }
     var playbackError by remember { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val preferences = remember { context.getSharedPreferences("mplayer_user_data", android.content.Context.MODE_PRIVATE) }
@@ -136,30 +142,67 @@ private fun MPlayerApp() {
 
     fun playTrack(index: Int) {
         if (index !in songs.indices) return
+        val controller = mediaController ?: return
         try {
-            player?.release()
-            player = null
-            isPlaying = false
             playbackError = false
-            currentIndex = index
-            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, songs[index].id)
-            val nextPlayer = MediaPlayer()
-            player = nextPlayer
-            nextPlayer.setOnPreparedListener { mp -> mp.start(); isPlaying = true }
-            nextPlayer.setOnCompletionListener {
-                if (index + 1 < songs.size) playTrack(index + 1) else isPlaying = false
+            val mediaItems = songs.map { song ->
+                val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id)
+                MediaItem.Builder()
+                    .setMediaId(song.id.toString())
+                    .setUri(uri)
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle(song.title)
+                            .setArtist(song.artist)
+                            .setAlbumTitle(song.album)
+                            .build()
+                    )
+                    .build()
             }
-            nextPlayer.setOnErrorListener { _, _, _ -> isPlaying = false; playbackError = true; true }
-            nextPlayer.setDataSource(context, uri)
-            nextPlayer.prepareAsync()
+            controller.setMediaItems(mediaItems, index, 0L)
+            controller.prepare()
+            controller.play()
         } catch (_: Exception) {
             isPlaying = false
             playbackError = true
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose { player?.release(); player = null }
+    DisposableEffect(context) {
+        val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
+        val future = MediaController.Builder(context, token).buildAsync()
+        val directExecutor = Executor { command -> command.run() }
+        future.addListener({
+            try {
+                mediaController = future.get()
+            } catch (_: Exception) {
+                playbackError = true
+            }
+        }, directExecutor)
+        onDispose {
+            MediaController.releaseFuture(future)
+            mediaController = null
+        }
+    }
+
+    DisposableEffect(mediaController) {
+        val controller = mediaController
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(playing: Boolean) {
+                isPlaying = playing
+            }
+
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                currentIndex = songs.indexOfFirst { it.id.toString() == mediaItem?.mediaId }
+            }
+
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                playbackError = true
+                isPlaying = false
+            }
+        }
+        controller?.addListener(listener)
+        onDispose { controller?.removeListener(listener) }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -356,17 +399,17 @@ private fun MPlayerApp() {
                                     Text(current.artist, color = Color(0xFF9BA49D), fontSize = 11.sp, maxLines = 1)
                                 }
                                 IconButton(onClick = {
-                                    val p = player
-                                    if (p != null) {
-                                        try { if (p.isPlaying) { p.pause(); isPlaying = false } else { p.start(); isPlaying = true } } catch (_: Exception) { playbackError = true }
+                                    val controller = mediaController
+                                    if (controller != null) {
+                                        if (controller.isPlaying) controller.pause() else controller.play()
                                     } else playTrack(currentIndex)
                                 }) { Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, if (isPlaying) "Pause" else "Play", tint = NeonGreen, modifier = Modifier.size(32.dp)) }
-                                IconButton(onClick = { player?.release(); player = null; isPlaying = false; currentIndex = -1 }) { Icon(Icons.Default.Stop, "Stop", tint = Orange) }
+                                IconButton(onClick = { mediaController?.stop(); mediaController?.clearMediaItems(); isPlaying = false; currentIndex = -1 }) { Icon(Icons.Default.Stop, "Stop", tint = Orange) }
                             }
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = { if (currentIndex > 0) playTrack(currentIndex - 1) }) { Icon(Icons.Default.SkipPrevious, "Previous", tint = SoftWhite) }
+                                IconButton(onClick = { mediaController?.seekToPreviousMediaItem() }) { Icon(Icons.Default.SkipPrevious, "Previous", tint = SoftWhite) }
                                 Text(if (playbackError) { if (isPersian) "خطا در پخش آهنگ" else "Playback error" } else { if (isPersian) "در حال پخش" else "Now playing" }, color = if (playbackError) Orange else NeonGreen, fontSize = 11.sp)
-                                IconButton(onClick = { if (currentIndex + 1 < songs.size) playTrack(currentIndex + 1) }) { Icon(Icons.Default.SkipNext, "Next", tint = SoftWhite) }
+                                IconButton(onClick = { mediaController?.seekToNextMediaItem() }) { Icon(Icons.Default.SkipNext, "Next", tint = SoftWhite) }
                             }
                         }
                     }
