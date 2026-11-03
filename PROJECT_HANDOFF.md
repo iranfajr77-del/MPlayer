@@ -28,7 +28,7 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Smart Mix: floating neon-green play control, random favorites without near repeats.
 - Offline Professional DJ: approximate BPM/beat/mood analysis, two-player crossfade, 3/6/9/12 seconds (default 6), current/next, waveform/BPM/sync. Beat matching is approximate and needs device testing.
 - Equalizer presets Normal, Pop, Rock, Jazz, Classical, Electronic, Hip-Hop, Bass Boost, Vocal; manual bands 31, 62, 125, 250, 500, 1k, 2k, 4k, 8k, 16k Hz; save/reset, bass boost, virtualizer. Device support varies.
-- Settings: audio/equalizer, DJ, playback, sleep timer, library, notifications, privacy, about, language.
+- Settings: bilingual settings screen with language selection, About/version, basic music-permission/privacy explanation, and persistent 15/30/45/60-minute sleep timer. Audio/equalizer, DJ, playback, library and notification controls remain to be built.
 - Offline; no paid APIs or servers. Preserve data across upgrades; stable package ID and persistent release signing key needed.
 
 ## Implemented in code (not device-tested)
@@ -55,22 +55,22 @@ In every new chat, read this file and the latest entries in DEVELOPMENT_LOG.md f
 - Sorting and Smart Mix are implemented in code; Build 47 and Smart Mix CI run `41736421878` succeeded.
 - Embedded/per-track artwork, album workflows, and playback controls are implemented in code but need final device validation.
 - Supplied logo asset is still not in Android resources/launcher icon; only a temporary text M is shown in the app header.
-- Language choice is now persisted, and the last main page is restored on app launch (commit `574a32d43ebd72a5dc51e4ee0fb596b883f2bcfb`; CI pending at the time of implementation). Full RTL/LTR review and a dedicated settings UI remain.
-- Equalizer, DJ mode, sleep timer, privacy/about, release signing and device tests remain.
+- Language choice is persisted, last main page is restored, and a bilingual Settings screen is implemented with About/version, permission/privacy explanation, and sleep timer choices. Settings code commit `3c848ea13a1daf63915702f19f01ac4afc10e349` passed CI run `41737345325`. Sleep timer code commit `c0d88f1b8f5f7c93b2bd70967ccd7f33acebb8b6`; CI run `41737599825` is in progress. Full RTL/LTR review and device validation remain.
+- Equalizer, DJ mode, detailed privacy/about policy, release signing and device tests remain. Sleep timer is implemented in code but its timing and pause behavior are not device-tested.
 
 ## Exact next task
 1. Add the supplied headphone/M logo to Android resources and use it for the launcher icon and in-app brand mark.
-2. Implement and validate the equalizer UI and device-supported audio effects, with safe fallbacks when the device does not expose an effect.
-3. Implement offline DJ mode with explicit performance limits and resource-safe playback.
-4. Finish settings, language/RTL persistence, sleep timer, privacy/about, and restore-last-page behavior.
-5. Prepare release signing and a final APK only after all planned work; then perform the full Poco M3 validation, including artwork URI persistence/reset and background playback.
+2. Implement and validate device-supported equalizer controls with safe fallbacks.
+3. Implement offline DJ mode only if two-player mixing can be integrated safely without destabilizing current playback.
+4. Finish settings, full RTL/LTR review, custom queue, detailed privacy/about, and playback lifecycle checks.
+5. Prepare stable release signing and a final APK only after the feature set is implemented; then perform full Poco M3 validation.
 
 ## Build and files
 - Main branch: main.
 - MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
 - PlaybackService: app/src/main/java/com/mplayer/app/PlaybackService.kt.
 - CI: .github/workflows/android.yml; debug artifact M-Player-debug.
-- Latest code commit: `574a32d43ebd72a5dc51e4ee0fb596b883f2bcfb` (language persistence and last main page restoration).
+- Latest feature code commit: `c0d88f1b8f5f7c93b2bd70967ccd7f33acebb8b6` (sleep timer; CI run `41737599825` in progress at last check).
 - Smart Mix documentation commit: `28b8bb7a67fb706f9336ae7c2a67152bda3c0f20`.
 - Latest Actions result must be checked for the Smart Mix code commit; do not treat it as verified until CI succeeds.
 
