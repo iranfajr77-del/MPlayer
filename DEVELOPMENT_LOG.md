@@ -137,3 +137,13 @@ After every meaningful implementation, decision, or CI result:
 - GitHub Actions run `41734647794` (Build 43): SUCCESS. Kotlin compilation, debug APK build, and artifact upload all completed successfully. Artifact: `M-Player-debug` (~20.1 MiB).
 - Build 42 failed because its earlier intermediate commit updated the call sites before updating the `SongRow` signature and picker state; Build 43 includes the completed matching implementation and passed.
 - Limitations: no installation or runtime test on Poco M3; image permission persistence, display after app restart, reset behavior, and now-playing refresh still need final device validation. CI success is not device validation.
+
+
+## 2026-11-04 — Smart Mix from favorites
+- Updated `app/src/main/java/com/mplayer/app/MainActivity.kt`.
+- Added a Smart Mix quick-access tile on the home screen when the user has at least one favorite.
+- Smart Mix builds a randomized Media3 playlist using only favorited local tracks. It avoids starting with the same first track as the previous Smart Mix session when more than one favorite exists; each track appears at most once in that generated playlist.
+- Favorite records and source audio files are not modified.
+- Code commit: `b0822ef62d40cd14bd9a34da76ce01176ea40466`.
+- CI: workflow is expected from the push; status must be checked before treating this milestone as build-verified.
+- Limitations: no Poco M3 runtime testing. A dedicated persistent DJ history/advanced no-repeat algorithm is not included in this basic Smart Mix milestone.
