@@ -48,13 +48,13 @@ Incomplete/partial:
 - Sorting, multi-select library, artwork, Smart Mix, settings, RTL polish, equalizer, DJ, release signing and device tests remain.
 
 ## Exact next task
-Implement library multi-select and select-all, with a clear selection mode and an action to add selected tracks to an album. Then prioritize the playback engine migration to Media3 background service, including queue/seek/repeat/shuffle and media notification.
+Next, prioritize the playback engine migration to a Media3 background service, including queue/seek/repeat/shuffle and media notification. Then continue with artwork/sorting, Smart Mix, equalizer, DJ, settings, branding and release readiness.
 
 ## Build and files
 - Main branch: main.
 - MainActivity: app/src/main/java/com/mplayer/app/MainActivity.kt.
 - CI: .github/workflows/android.yml; debug artifact M-Player-debug.
-- Latest code commit: 20b7f33aed8dac09fa405bce5ee786f91654066b.
+- Latest code commit: f694b46178a9555f0ed879039ff7c310b4434b4d.
 - Latest Actions run: 41729312397, queued when checked; verify its final conclusion before relying on the build.
 - Scaffold: settings.gradle.kts, build.gradle.kts, gradle.properties, app/build.gradle.kts, app/src/main/AndroidManifest.xml.
 
