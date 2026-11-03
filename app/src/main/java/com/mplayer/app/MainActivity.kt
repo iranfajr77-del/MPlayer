@@ -60,6 +60,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -73,7 +75,7 @@ private val Panel = Color(0xFF171B18)
 private val Orange = Color(0xFFFF8A24)
 private val SoftWhite = Color(0xFFF2F5F2)
 
-private data class MusicTrack(val id: Long, val title: String, val artist: String, val album: String, val duration: Long)
+private data class MusicTrack(val id: Long, val title: String, val artist: String, val album: String, val duration: Long, val albumId: Long = -1L)
 private data class UserAlbum(val id: String, val name: String, val trackIds: Set<Long>, val coverUri: String? = null)
 
 class MainActivity : ComponentActivity() {
@@ -137,7 +139,7 @@ private fun MPlayerApp() {
 
     fun refreshSongs() {
         val result = mutableListOf<MusicTrack>()
-        val projection = arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.DURATION)
+        val projection = arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.DURATION, MediaStore.Audio.Media.ALBUM_ID)
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
         context.contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, selection, null, "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC")?.use { cursor ->
             val id = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
@@ -145,8 +147,9 @@ private fun MPlayerApp() {
             val artist = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
             val album = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
             val duration = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+            val albumId = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
             while (cursor.moveToNext()) {
-                result += MusicTrack(cursor.getLong(id), cursor.getString(title) ?: "Unknown title", cursor.getString(artist) ?: "Unknown artist", cursor.getString(album) ?: "Unknown album", cursor.getLong(duration))
+                result += MusicTrack(cursor.getLong(id), cursor.getString(title) ?: "Unknown title", cursor.getString(artist) ?: "Unknown artist", cursor.getString(album) ?: "Unknown album", cursor.getLong(duration), cursor.getLong(albumId))
             }
         }
         songs = result
@@ -441,7 +444,7 @@ private fun MPlayerApp() {
                     Card(Modifier.fillMaxWidth().padding(top = 10.dp), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
                         Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.MusicNote, null, tint = NeonGreen, modifier = Modifier.size(30.dp))
+                                TrackArtwork(current.albumId, Modifier.size(42.dp))
                                 Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
                                     Text(current.title, color = SoftWhite, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(current.artist, color = Color(0xFF9BA49D), fontSize = 11.sp, maxLines = 1)
@@ -600,10 +603,31 @@ private fun AlbumCover(uri: String?, modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun TrackArtwork(albumId: Long, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    var bitmap by remember(albumId) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(albumId) {
+        bitmap = if (albumId > 0L) withContext(Dispatchers.IO) {
+            try {
+                val artUri = Uri.parse("content://media/external/audio/albumart/$albumId")
+                context.contentResolver.openInputStream(artUri)?.use { BitmapFactory.decodeStream(it) }
+            } catch (_: Exception) { null }
+        } else null
+    }
+    Box(modifier.background(Color(0xFF252D27), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+        if (bitmap != null) {
+            Image(bitmap = bitmap!!.asImageBitmap(), contentDescription = "Track artwork", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        } else {
+            Icon(Icons.Default.MusicNote, null, tint = NeonGreen, modifier = Modifier.size(25.dp))
+        }
+    }
+}
+
+@Composable
 private fun SongRow(song: MusicTrack, isPersian: Boolean, selected: Boolean, playing: Boolean, isFavorite: Boolean, onClick: () -> Unit, onFavorite: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(if (selected) Color(0xFF203321) else Panel, RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(46.dp).background(Color(0xFF252D27), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
-            Icon(if (selected && playing) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = NeonGreen)
+            TrackArtwork(song.albumId, Modifier.fillMaxSize())
         }
         Column(Modifier.weight(1f).padding(horizontal = 11.dp)) {
             Text(song.title, color = SoftWhite, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
