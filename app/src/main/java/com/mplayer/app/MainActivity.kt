@@ -341,10 +341,10 @@ private fun MPlayerApp() {
                 }
 
                 Spacer(Modifier.height(20.dp))
-                if (selectedTab == "library" || selectedTab == "favorites" || selectedTab == "album") {
+                if (selectedTab == "library" || selectedTab == "favorites" || selectedTab == "album" || selectedTab == "settings") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { selectedTab = "home"; librarySelectionMode = false; selectedLibraryIds = emptySet() }) { Icon(Icons.Default.ArrowBack, "Back", tint = NeonGreen) }
-                        Text(if (selectedTab == "favorites") { if (isPersian) "علاقه‌مندی‌ها" else "Favorites" } else if (selectedTab == "album") { albums.firstOrNull { it.id == openedAlbumId }?.name ?: if (isPersian) "آلبوم" else "Album" } else { if (isPersian) "همه آهنگ‌ها" else "All Songs" }, modifier = Modifier.weight(1f), fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                        Text(if (selectedTab == "settings") { if (isPersian) "تنظیمات" else "Settings" } else if (selectedTab == "favorites") { if (isPersian) "علاقه‌مندی‌ها" else "Favorites" } else if (selectedTab == "album") { albums.firstOrNull { it.id == openedAlbumId }?.name ?: if (isPersian) "آلبوم" else "Album" } else { if (isPersian) "همه آهنگ‌ها" else "All Songs" }, modifier = Modifier.weight(1f), fontSize = 23.sp, fontWeight = FontWeight.Bold)
                         if (selectedTab == "library") TextButton(onClick = { librarySelectionMode = !librarySelectionMode; selectedLibraryIds = emptySet(); searchQuery = "" }) { Text(if (librarySelectionMode) { if (isPersian) "پایان" else "Done" } else { if (isPersian) "انتخاب" else "Select" }, color = Orange, fontWeight = FontWeight.Bold) }
                     }
                     val activeAlbum = albums.firstOrNull { it.id == openedAlbumId }
@@ -495,6 +495,32 @@ private fun MPlayerApp() {
                         }
                         TextButton(onClick = { refreshSongs() }, modifier = Modifier.align(Alignment.End)) { Text(if (isPersian) "اسکن دوباره" else "Rescan", color = NeonGreen) }
                     }
+                } else if (selectedTab == "settings") {
+                    Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text(if (isPersian) "زبان برنامه" else "App language", color = SoftWhite, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                                Text(if (isPersian) "زبان نمایش منوها و بخش‌های برنامه را انتخاب کن." else "Choose the language used throughout the app.", color = Color(0xFF9BA49D), fontSize = 12.sp)
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Button(onClick = { isPersian = true }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = if (isPersian) NeonGreen else Color(0xFF303832), contentColor = if (isPersian) MBlack else SoftWhite)) { Text("فارسی") }
+                                    Button(onClick = { isPersian = false }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = if (!isPersian) NeonGreen else Color(0xFF303832), contentColor = if (!isPersian) MBlack else SoftWhite)) { Text("English") }
+                                }
+                            }
+                        }
+                        Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(if (isPersian) "دربارهٔ M Player" else "About M Player", color = SoftWhite, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                                Text(if (isPersian) "نسخهٔ 1.0.1" else "Version 1.0.1", color = NeonGreen, fontWeight = FontWeight.SemiBold)
+                                Text(if (isPersian) "یک پخش‌کنندهٔ موسیقی با کتابخانه، آلبوم‌های شخصی، علاقه‌مندی‌ها و میکس هوشمند." else "A music player with a library, custom albums, favorites and Smart Mix.", color = Color(0xFF9BA49D), fontSize = 12.sp)
+                            }
+                        }
+                        Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(if (isPersian) "دسترسی‌ها و حریم خصوصی" else "Permissions & privacy", color = SoftWhite, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                                Text(if (isPersian) "برای نمایش و پخش آهنگ‌های گوشی، برنامه به دسترسی موسیقی نیاز دارد. این دسترسی را هر زمان می‌توانی از تنظیمات اندروید مدیریت کنی." else "The app needs music access to find and play audio stored on your phone. You can manage this permission anytime in Android settings.", color = Color(0xFF9BA49D), fontSize = 12.sp)
+                            }
+                        }
+                    }
                 } else {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isPersian) "آلبوم‌های من" else "My Albums", color = SoftWhite, fontSize = 25.sp, fontWeight = FontWeight.Bold)
@@ -531,6 +557,8 @@ private fun MPlayerApp() {
                     Text(if (isPersian) "دسترسی سریع" else "Quick Access", color = SoftWhite, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(10.dp))
                     QuickTile(if (isPersian) "همه آهنگ‌ها" else "All Songs") { selectedTab = "library" }
+                    Spacer(Modifier.height(9.dp))
+                    QuickTile(if (isPersian) "تنظیمات" else "Settings") { selectedTab = "settings" }
                     Spacer(Modifier.height(9.dp))
                     QuickTile(if (isPersian) "علاقه‌مندی‌ها  •  ${favoriteIds.size}" else "Favorites  •  ${favoriteIds.size}") { selectedTab = "favorites"; searchQuery = "" }
                     if (favoriteIds.isNotEmpty()) {
