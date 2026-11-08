@@ -53,7 +53,7 @@ private fun NovelScreen(initialChapter: Int, onChapterChanged: (Int) -> Unit) {
     val chapterTexts = remember {
         runCatching {
             val raw = context.assets.open("novel_fa.txt").bufferedReader(Charsets.UTF_8).use { it.readText() }
-            val headings = Regex("(?m)^فصل \\d+ ـ [^\\n]+").findAll(raw).toList()
+            val headings = Regex("(?m)^فصل [۰-۹0-9]+ ـ [^\\n]+").findAll(raw).toList()
             headings.mapIndexed { index, match ->
                 val bodyStart = match.range.last + 1
                 val bodyEnd = if (index + 1 < headings.size) headings[index + 1].range.first else raw.length
