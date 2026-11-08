@@ -50,11 +50,19 @@ private fun NovelScreen(initialChapter: Int, onChapterChanged: (Int) -> Unit) {
             }
         }.getOrNull()
     }
-    val sampleText = if (chapter == 1) {
-        "هنوز داستان در این فصل نوشته نشده است. متن نهایی رمان پس از آماده‌شدن، در همین قسمت و روی تصویر برگه‌ای که خودت می‌فرستی قرار می‌گیرد.\n\nاین نسخه فعلاً چارچوب مطالعه را آماده کرده است."
-    } else {
-        "متن فصل $chapter هنوز وارد نشده است. هر فصل از رمان پس از نگارش در این صفحه نمایش داده خواهد شد."
+    val chapterTexts = remember {
+        runCatching {
+            val raw = context.assets.open("novel_fa.txt").bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val headings = Regex("(?m)^فصل \\d+ ـ [^\\n]+").findAll(raw).toList()
+            headings.mapIndexed { index, match ->
+                val bodyStart = match.range.last + 1
+                val bodyEnd = if (index + 1 < headings.size) headings[index + 1].range.first else raw.length
+                raw.substring(bodyStart, bodyEnd).trim()
+            }
+        }.getOrDefault(emptyList())
     }
+    val chapterText = chapterTexts.getOrNull(chapter - 1)
+        ?: "متن این فصل در فایل رمان پیدا نشد."
 
     Column(
         modifier = Modifier.fillMaxSize().background(Color(0xFF171411)).padding(16.dp),
