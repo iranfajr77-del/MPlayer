@@ -45,7 +45,7 @@ private fun NovelScreen(initialChapter: Int, onChapterChanged: (Int) -> Unit) {
     val context = LocalContext.current
     val paper = remember {
         runCatching {
-            context.assets.open("paper.png").use {
+            context.assets.open("mynisalto.jpg").use {
                 BitmapFactory.decodeStream(it).asImageBitmap()
             }
         }.getOrNull()
