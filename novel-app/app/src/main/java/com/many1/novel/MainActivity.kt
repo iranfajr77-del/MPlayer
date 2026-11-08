@@ -91,7 +91,7 @@ private fun NovelScreen(initialChapter: Int, onChapterChanged: (Int) -> Unit) {
                 Text("فصل $chapter", color = Color(0xFF21170F), fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(20.dp))
                 Text(
-                    sampleText,
+                    chapterText,
                     color = Color.Black,
                     fontSize = 17.sp,
                     lineHeight = 31.sp,
