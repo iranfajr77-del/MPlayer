@@ -43,8 +43,9 @@ jobs:
       - name: Generate Persian narrated video
         env:
           LLM7_API_KEY: ${{ secrets.LLM7_API_KEY }}
+          STORY_TOPIC: ${{ inputs.topic }}
         run: |
-          python AI-Animation-Studio/generate.py --topic "${{ inputs.topic }}"
+          python AI-Animation-Studio/generate.py --topic "$STORY_TOPIC"
 
       - name: Upload video and project outputs
         uses: actions/upload-artifact@v4
