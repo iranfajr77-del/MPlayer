@@ -30,15 +30,14 @@ SAMPLE_STORY = {
     ]
 }
 
-def call_llm(topic):
-    prompt = (
-        "Write a suspenseful family-friendly Persian animal story for a short vertical animated video. "
-        "Return ONLY valid JSON with keys title and scenes. scenes must be an array of exactly 6 objects; "
-        "each object has narration (one or two short Persian sentences, suitable for spoken audio) and "
-        "visual (one of rabbit, fox, shadow, empty). No markdown. Topic: " + topic
-    )
+def _chat_completion(base_url, model, prompt, api_key="", timeout=60):
+    """Call any OpenAI-compatible chat-completions endpoint."""
+    endpoint = base_url.rstrip("/")
+    if not endpoint.endswith("/v1"):
+        endpoint += "/v1"
+    endpoint += "/chat/completions"
     body = json.dumps({
-        "model": "gpt-oss:20b",
+        "model": model,
         "messages": [
             {"role": "system", "content": "You are a creative Persian short-film writer. Output valid JSON only."},
             {"role": "user", "content": prompt}
@@ -47,18 +46,19 @@ def call_llm(topic):
         "max_tokens": 1200
     }).encode("utf-8")
     req = urllib.request.Request(
-        "https://api.llm7.io/v1/chat/completions",
-        data=body,
+        endpoint, data=body,
         headers={"Content-Type": "application/json"},
         method="POST"
     )
-    token = os.getenv("LLM7_API_KEY", "").strip()
-    if token:
-        req.add_header("Authorization", "Bearer " + token)
-    with urllib.request.urlopen(req, timeout=45) as response:
+    if api_key:
+        req.add_header("Authorization", "Bearer " + api_key)
+    with urllib.request.urlopen(req, timeout=timeout) as response:
         payload = json.loads(response.read().decode("utf-8"))
-    raw = payload["choices"][0]["message"]["content"]
-    match = re.search(r"\{.*\}", raw, re.S)
+    return payload["choices"][0]["message"]["content"]
+
+
+def _parse_story(raw):
+    match = re.search(r"\\{.*\\}", raw, re.S)
     story = json.loads(match.group(0) if match else raw)
     scenes = story.get("scenes", [])
     if len(scenes) != 6:
@@ -69,6 +69,41 @@ def call_llm(topic):
         if scene.get("visual") not in {"rabbit", "fox", "shadow", "empty"}:
             scene["visual"] = "rabbit"
     return {"title": str(story.get("title") or "داستان کوتاه"), "scenes": scenes}
+
+
+def call_llm(topic):
+    prompt = (
+        "Write a suspenseful family-friendly Persian animal story for a short vertical animated video. "
+        "Return ONLY valid JSON with keys title and scenes. scenes must be an array of exactly 6 objects; "
+        "each object has narration (one or two short Persian sentences, suitable for spoken audio) and "
+        "visual (one of rabbit, fox, shadow, empty). No markdown. Topic: " + topic
+    )
+
+    # Prefer the user's separately hosted Free Claude Code (FCC) proxy.
+    # FCC is an OpenAI-compatible text-model router; image/video generation
+    # remains on the Qwen + Wan pipeline in AI-Animation-Studio-v2.
+    fcc_base = os.getenv("FCC_BASE_URL", "").strip()
+    if fcc_base:
+        fcc_model = os.getenv("FCC_MODEL", "llm7/default").strip()
+        fcc_key = os.getenv("FCC_API_KEY", "").strip()
+        try:
+            raw = _chat_completion(fcc_base, fcc_model, prompt, fcc_key)
+            print(f"STORY_PROVIDER: FCC ({fcc_model})")
+            return _parse_story(raw)
+        except Exception as exc:
+            print("FCC text generation failed; trying direct LLM7 fallback:", str(exc))
+
+    # Backward-compatible direct LLM7 fallback.
+    token = os.getenv("LLM7_API_KEY", "").strip()
+    raw = _chat_completion(
+        "https://api.llm7.io/v1",
+        "gpt-oss:20b",
+        prompt,
+        token,
+        timeout=45,
+    )
+    print("STORY_PROVIDER: direct LLM7 fallback")
+    return _parse_story(raw)
 
 def get_font(size):
     candidates = [
