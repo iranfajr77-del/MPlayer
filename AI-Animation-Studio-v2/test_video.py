@@ -1,7 +1,9 @@
 import json
 import os
 import shutil
+import inspect
 from pathlib import Path
+from urllib.request import urlretrieve
 
 from gradio_client import Client
 
@@ -39,70 +41,82 @@ NEGATIVE_PROMPT = (
 )
 
 
+def make_client(space_id, token):
+    params = inspect.signature(Client).parameters
+    kwargs = {"verbose": True}
+    if token:
+        if "token" in params:
+            kwargs["token"] = token
+        elif "hf_token" in params:
+            kwargs["hf_token"] = token
+    return Client(space_id, **kwargs)
+
+
+def save_gradio_file(value, destination):
+    # Gradio image outputs are commonly dictionaries with path/url;
+    # video outputs are commonly local filepath strings.
+    if isinstance(value, dict):
+        local_path = value.get("path")
+        remote_url = value.get("url")
+        if local_path and Path(local_path).is_file():
+            shutil.copy2(local_path, destination)
+            return
+        if remote_url:
+            urlretrieve(remote_url, destination)
+            return
+        raise RuntimeError(f"Gradio returned no usable file path or URL: {value}")
+
+    path = Path(str(value))
+    if path.is_file():
+        shutil.copy2(path, destination)
+        return
+
+    raise RuntimeError(f"Gradio returned an unavailable file: {value!r}")
+
+
 def main():
     token = os.environ.get("HF_TOKEN", "").strip()
-    if not token:
-        raise RuntimeError(
-            "Missing HF_TOKEN. Add a Hugging Face read token as a GitHub Actions secret named HF_TOKEN."
-        )
 
-    image_client = Client(IMAGE_SPACE, token=token, verbose=True)
-    try:
-        image_result = image_client.predict(
-            IMAGE_PROMPT,
-            42,
-            True,
-            "9:16",
-            4.0,
-            24,
-            False,
-            api_name="/infer",
-        )
-    except Exception:
-        print("Qwen Image API discovery:")
-        image_client.view_api()
-        raise
-
+    print("Connecting to Qwen Image Space...")
+    image_client = make_client(IMAGE_SPACE, token)
+    image_result = image_client.predict(
+        IMAGE_PROMPT,
+        42,
+        True,
+        "9:16",
+        4.0,
+        24,
+        False,
+        api_name="/infer",
+    )
     image_value = image_result[0] if isinstance(image_result, (tuple, list)) else image_result
-    image_path = Path(str(image_value))
-    if not image_path.is_file():
-        raise RuntimeError(f"Qwen Image did not return a local image file: {image_value}")
-
     saved_image = OUT / "character-reference.png"
-    shutil.copy2(image_path, saved_image)
+    save_gradio_file(image_value, saved_image)
     print(f"IMAGE_READY: {saved_image}")
 
-    video_client = Client(VIDEO_SPACE, token=token, verbose=True)
-    try:
-        video_result = video_client.predict(
-            str(saved_image),
-            MOTION_PROMPT,
-            6,
-            NEGATIVE_PROMPT,
-            3.5,
-            1.0,
-            1.0,
-            42,
-            True,
-            api_name="/generate_video",
-        )
-    except Exception:
-        print("Wan 2.2 API discovery:")
-        video_client.view_api()
-        raise
-
+    print("Connecting to Wan 2.2 video Space...")
+    video_client = make_client(VIDEO_SPACE, token)
+    video_result = video_client.predict(
+        str(saved_image),
+        MOTION_PROMPT,
+        6,
+        NEGATIVE_PROMPT,
+        3.5,
+        1.0,
+        1.0,
+        42,
+        True,
+        api_name="/generate_video",
+    )
     video_value = video_result[0] if isinstance(video_result, (tuple, list)) else video_result
-    video_path = Path(str(video_value))
-    if not video_path.is_file():
-        raise RuntimeError(f"Wan 2.2 did not return a local video file: {video_value}")
-
     final_video = OUT / "ai-animation-v2-test.mp4"
-    shutil.copy2(video_path, final_video)
+    save_gradio_file(video_value, final_video)
 
     metadata = {
         "image_model": IMAGE_SPACE,
         "video_model": VIDEO_SPACE,
-        "duration_target_seconds": 3.5,
+        "duration_seconds_requested": 3.5,
+        "aspect_ratio": "9:16",
         "image_prompt": IMAGE_PROMPT,
         "motion_prompt": MOTION_PROMPT,
         "note": "Visual-only proof of concept. Persian narration and subtitles are not included yet."
@@ -112,6 +126,7 @@ def main():
         encoding="utf-8",
     )
     print(f"VIDEO_READY: {final_video}")
+    print(f"VIDEO_BYTES: {final_video.stat().st_size}")
 
 
 if __name__ == "__main__":
