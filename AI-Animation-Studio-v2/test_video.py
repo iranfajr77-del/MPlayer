@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "output"
 OUT.mkdir(parents=True, exist_ok=True)
 
-IMAGE_SPACE = "Qwen/Qwen-Image"
+IMAGE_SPACE = "mcp-tools/Qwen-Image"
 VIDEO_SPACE = "zerogpu-aoti/wan2-2-fp8da-aoti-faster"
 
 IMAGE_PROMPT = """
@@ -84,10 +84,10 @@ def main():
         42,
         True,
         "9:16",
+        NEGATIVE_PROMPT,
         4.0,
         24,
-        False,
-        api_name="/infer",
+        api_name="/generate_image",
     )
     image_value = image_result[0] if isinstance(image_result, (tuple, list)) else image_result
     saved_image = OUT / "character-reference.png"
@@ -97,7 +97,7 @@ def main():
     print("Connecting to Wan 2.2 video Space...")
     video_client = make_client(VIDEO_SPACE, token)
     video_result = video_client.predict(
-        str(saved_image),
+        {"path": str(saved_image)},
         MOTION_PROMPT,
         6,
         NEGATIVE_PROMPT,
