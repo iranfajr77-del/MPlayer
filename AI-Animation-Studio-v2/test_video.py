@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.request import urlretrieve
 
 from gradio_client import Client
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "output"
@@ -92,7 +93,10 @@ def main():
     image_value = image_result[0] if isinstance(image_result, (tuple, list)) else image_result
     saved_image = OUT / "character-reference.png"
     save_gradio_file(image_value, saved_image)
-    print(f"IMAGE_READY: {saved_image}")
+    # Normalize possible WebP bytes returned by Qwen into a real PNG.
+    with Image.open(saved_image) as generated:
+        generated.convert("RGB").save(saved_image, format="PNG", optimize=True)
+    print(f"IMAGE_READY: {saved_image} ({saved_image.stat().st_size} bytes, PNG)")
 
     print("Connecting to Wan 2.2 video Space...")
     video_client = make_client(VIDEO_SPACE, token)
