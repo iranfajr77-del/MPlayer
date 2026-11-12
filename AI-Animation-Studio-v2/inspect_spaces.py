@@ -13,7 +13,7 @@ OUT = ROOT / "output"
 OUT.mkdir(parents=True, exist_ok=True)
 
 SPACES = {
-    "qwen_image": "Qwen/Qwen-Image",
+    "qwen_image": "mcp-tools/Qwen-Image",
     "wan_video": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
 }
 
