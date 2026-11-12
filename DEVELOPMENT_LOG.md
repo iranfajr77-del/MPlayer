@@ -191,3 +191,14 @@ After every meaningful implementation, decision, or CI result:
 - Triggered a fresh Android CI build without changing application source code, to reproduce the Build 73 application from the same `main` source state and regenerate its debug APK artifact.
 - This is a rebuild only; it does not add or modify app features.
 - Build result and artifact availability must be verified from the new GitHub Actions run.
+
+
+## 2026-11-12 — AI Animation Studio prototype
+- Added `AI-Animation-Studio/README.md`, `requirements.txt`, and `generate.py`.
+- Added `.github/workflows/ai-animation.yml` with manual dispatch and an MP4/SRT/story artifact.
+- Pipeline: LLM7 anonymous chat completion attempt (sample-story fallback), Persian Edge TTS narration, Pillow illustrated forest scenes, FFmpeg motion/concatenation, Persian subtitle burn-in.
+- Follow-up fixes: use ASCII scene labels to avoid Pillow RTL/font-layout dependency; pass workflow topic through an environment variable.
+- Android application files and existing Android workflow were not changed.
+- Commit sequence: `bab9e81573fbde75e943b74b0004c3a7dce37222`, `3799628a821610e4cafb7de411393f25b7da590c`, `c777416162be4aafe5a7a3047569a7c3134eca04`, `cea53a2018dddb16720bd24576439d5fb755583b`, with follow-up fixes recorded in subsequent commits.
+- CI/runtime status: not yet run; workflow requires manual dispatch. No video artifact has been produced or device-tested.
+- Limitation: visuals are illustrated 2D motion graphics, not generated 3D animation. LLM7 anonymous access and Edge TTS availability are not guaranteed.
