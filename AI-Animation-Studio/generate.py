@@ -58,7 +58,7 @@ def _chat_completion(base_url, model, prompt, api_key="", timeout=60):
 
 
 def _parse_story(raw):
-    match = re.search(r"\\{.*\\}", raw, re.S)
+    match = re.search(r"\{.*\}", raw, re.S)
     story = json.loads(match.group(0) if match else raw)
     scenes = story.get("scenes", [])
     if len(scenes) != 6:
