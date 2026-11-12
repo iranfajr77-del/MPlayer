@@ -145,7 +145,7 @@ def make_scene(index, visual, title):
         draw_character(d, "rabbit", 360, 1070, .7)
     # Scene marker/title
     d.rounded_rectangle((35, 42, 685, 125), radius=24, fill=(3, 9, 12, 155), outline=(130, 190, 120, 100), width=2)
-    d.text((WIDTH//2, 83), title[:32], font=get_font(30), fill=(240, 246, 230), anchor="mm", direction="rtl")
+    d.text((WIDTH//2, 83), f"AI ANIMATION  •  SCENE {index:02}", font=get_font(28), fill=(240, 246, 230), anchor="mm")
     return im
 
 async def make_voice(text, path):
