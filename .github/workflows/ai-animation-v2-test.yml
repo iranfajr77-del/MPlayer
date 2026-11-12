@@ -1,0 +1,46 @@
+name: AI Animation Studio V2 Visual Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-animation-v2-visual-test
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "gradio_client>=1.5,<2" "Pillow>=10,<13"
+
+      - name: Generate one AI-animated test shot
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python AI-Animation-Studio-v2/test_video.py
+
+      - name: Upload visual test
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-animation-v2-visual-test
+          path: |
+            AI-Animation-Studio-v2/output/ai-animation-v2-test.mp4
+            AI-Animation-Studio-v2/output/character-reference.png
+            AI-Animation-Studio-v2/output/test-metadata.json
+          if-no-files-found: error
+          retention-days: 7
