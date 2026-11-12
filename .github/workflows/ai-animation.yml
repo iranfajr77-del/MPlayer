@@ -42,6 +42,9 @@ jobs:
 
       - name: Generate Persian narrated video
         env:
+          FCC_BASE_URL: ${{ secrets.FCC_BASE_URL }}
+          FCC_API_KEY: ${{ secrets.FCC_API_KEY }}
+          FCC_MODEL: ${{ vars.FCC_MODEL }}
           LLM7_API_KEY: ${{ secrets.LLM7_API_KEY }}
           STORY_TOPIC: ${{ inputs.topic }}
         run: |
