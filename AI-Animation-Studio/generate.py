@@ -89,7 +89,7 @@ def call_llm(topic):
         try:
             raw = _chat_completion(fcc_base, fcc_model, prompt, fcc_key)
             print(f"STORY_PROVIDER: FCC ({fcc_model})")
-            return _parse_story(raw)
+            return _parse_story(raw), f"FCC:{fcc_model}"
         except Exception as exc:
             print("FCC text generation failed; trying direct LLM7 fallback:", str(exc))
 
@@ -103,7 +103,7 @@ def call_llm(topic):
         timeout=45,
     )
     print("STORY_PROVIDER: direct LLM7 fallback")
-    return _parse_story(raw)
+    return _parse_story(raw), "LLM7"
 
 def get_font(size):
     candidates = [
@@ -210,10 +210,9 @@ def run():
         if p.is_file():
             p.unlink()
     try:
-        story = call_llm(args.topic)
-        source = "LLM7"
+        story, source = call_llm(args.topic)
     except Exception as exc:
-        print("LLM7 unavailable; using bundled sample story:", str(exc))
+        print("FCC/LLM7 unavailable; using bundled sample story:", str(exc))
         story = SAMPLE_STORY
         source = "sample-fallback"
 
