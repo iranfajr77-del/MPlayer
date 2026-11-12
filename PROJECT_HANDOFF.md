@@ -89,3 +89,13 @@ Use GitHub connector. Give direct links to changed files after commits. Do not a
 - The UI uses Android's `android.media.audiofx.Equalizer` against the active Media3 audio session and exposes the device-provided presets plus an enable switch.
 - PlaybackService stores the active audio session ID in the app preferences when playback starts or the media item changes.
 - Availability depends on device/ROM audio-effect support; test on the target Poco M3. This is not yet verified on-device.
+
+
+## AI Animation Studio (2026-11-12)
+- Added an isolated `AI-Animation-Studio/` folder; Android app source and Gradle configuration were not changed.
+- Added a manual GitHub Actions workflow at `.github/workflows/ai-animation.yml`.
+- Prototype attempts Persian story generation through the anonymous LLM7 OpenAI-compatible endpoint; it falls back to a bundled six-scene sample if the model endpoint is unavailable.
+- Prototype generates Persian narration with Edge TTS, illustrated 2D forest scene cards with zoom motion, a vertical MP4, a standalone SRT, and story JSON.
+- This is not true 3D or AI text-to-video generation. The current visual renderer is 2D motion graphics. Edge TTS requires network access and may be rate-limited.
+- First manual workflow run and artifact have not yet been executed/validated.
+- Exact next task: run Actions → AI Animation Studio → Run workflow; inspect the artifact and fix any runtime errors. Only after a successful run should a real image/video generation provider be integrated.
