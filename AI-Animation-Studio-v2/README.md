@@ -1,32 +1,27 @@
-# AI Animation Studio V2 — visual test
+# AI Animation Studio V2
 
-This is a separate proof-of-concept. It does not modify the Android M Player app or the first prototype.
+This is an isolated AI image-to-video experiment. It does not change the Android M Player app or the first prototype.
 
-## What this test does
+## First step: inspect the real APIs
 
-1. Uses the public Qwen Image Hugging Face Space to create one vertical 3D-cartoon character reference.
-2. Sends that image to the Wan 2.2 14B Image-to-Video Space to animate one 3.5-second shot.
-3. Uploads the MP4, reference image, and metadata as a GitHub Actions artifact.
+Hugging Face Spaces can expose Gradio APIs, but endpoint names and parameter order vary. This project first inspects the live API schemas instead of guessing them.
 
-## Required setup
+1. Open **Actions → AI Animation Studio V2 API Check**.
+2. Press **Run workflow**.
+3. Download the `huggingface-space-api-report` artifact.
+4. The report contains the actual endpoints and parameter signatures for both models.
 
-Create a Hugging Face access token with read access and add it to this GitHub repository:
+The public Spaces can be inspected without a token. Adding an optional repository secret named `HF_TOKEN` (a Hugging Face read token) can improve authenticated access and rate limits.
 
-- Repository → Settings → Secrets and variables → Actions → New repository secret
-- Name: `HF_TOKEN`
-- Value: your Hugging Face token
+## Target models
 
-No credit card or paid API key is required for this test. Hugging Face ZeroGPU free accounts have a limited daily GPU quota (currently about five minutes); generation may queue, fail when quota is exhausted, or be temporarily unavailable.
+- Image: `Qwen/Qwen-Image`
+- Image-to-video: `zerogpu-aoti/wan2-2-fp8da-aoti-faster`
 
-## Run
+The intended first visual test is one short vertical character shot. Persian narration and subtitles will be added only after the visual generation works.
 
-Open **Actions → AI Animation Studio V2 Visual Test → Run workflow**.
+## Free-tier limits
 
-Download the artifact named `ai-animation-v2-visual-test`.
+Hugging Face ZeroGPU quotas are limited and shared. The official documentation currently lists 2 GPU minutes per day for unauthenticated use and 5 minutes per day for a free account. Queueing, quota exhaustion, or public Space downtime may prevent a run.
 
-## Important limits
-
-- This is only a visual test of one short shot; it does not yet include Persian narration or subtitles.
-- The current free GPU allowance is not enough to promise 2–3 minutes of generated AI footage every day.
-- Public Spaces can change, queue, or become unavailable. A successful GitHub workflow is not guaranteed.
-- The image/video models are third-party Hugging Face Spaces, not owned or controlled by this repository.
+No daily 2–3 minute output guarantee is made. The first goal is one verifiable high-quality test clip.
