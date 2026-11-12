@@ -100,16 +100,42 @@ def main():
 
     print("Connecting to Wan 2.2 video Space...")
     video_client = make_client(VIDEO_SPACE, token)
+    # Send complete Gradio ImageData and a model-friendly portrait image.
+    wan_input = OUT / "wan-input.png"
+    with Image.open(saved_image) as source:
+        source = source.convert("RGB")
+        target_w, target_h = 480, 832
+        ratio = max(target_w / source.width, target_h / source.height)
+        resized = source.resize(
+            (round(source.width * ratio), round(source.height * ratio)),
+            Image.Resampling.LANCZOS,
+        )
+        left = (resized.width - target_w) // 2
+        top = (resized.height - target_h) // 2
+        resized.crop((left, top, left + target_w, top + target_h)).save(wan_input, "PNG")
+
+    image_data = {
+        "path": str(wan_input.resolve()),
+        "url": None,
+        "size": wan_input.stat().st_size,
+        "orig_name": "character-reference.png",
+        "mime_type": "image/png",
+        "is_stream": False,
+        "meta": {"_type": "gradio.FileData"},
+    }
+    print(f"WAN_INPUT_READY: {wan_input} ({image_data['size']} bytes, 480x832)")
+
+    # Prove the image-to-video path with minimum compute settings first.
     video_result = video_client.predict(
-        {"path": str(saved_image)},
+        image_data,
         MOTION_PROMPT,
-        6,
+        1,
         NEGATIVE_PROMPT,
-        3.5,
+        1.0,
         1.0,
         1.0,
         42,
-        True,
+        False,
         api_name="/generate_video",
     )
     video_value = video_result[0] if isinstance(video_result, (tuple, list)) else video_result
@@ -119,7 +145,9 @@ def main():
     metadata = {
         "image_model": IMAGE_SPACE,
         "video_model": VIDEO_SPACE,
-        "duration_seconds_requested": 3.5,
+        "duration_seconds_requested": 1.0,
+        "wan_steps": 1,
+        "wan_input_resolution": "480x832",
         "aspect_ratio": "9:16",
         "image_prompt": IMAGE_PROMPT,
         "motion_prompt": MOTION_PROMPT,
