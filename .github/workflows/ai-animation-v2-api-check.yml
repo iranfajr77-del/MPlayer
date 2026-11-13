@@ -1,0 +1,37 @@
+name: AI Animation Studio V2 API Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Gradio client
+        run: python -m pip install --upgrade gradio_client
+
+      - name: Inspect Qwen Image and Wan video APIs
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python AI-Animation-Studio-v2/inspect_spaces.py
+
+      - name: Upload API report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: huggingface-space-api-report
+          path: AI-Animation-Studio-v2/output/huggingface-api-report.json
+          if-no-files-found: warn
+          retention-days: 7
