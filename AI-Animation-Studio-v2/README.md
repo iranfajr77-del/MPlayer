@@ -1,27 +1,38 @@
-# AI Animation Studio V2
+# M Player — AI Animation Studio V2
 
-This is an isolated AI image-to-video experiment. It does not change the Android M Player app or the first prototype.
+An isolated cloud-assisted video workflow for creating short vertical animation clips. It does not change the Android music-player code.
 
-## First step: inspect the real APIs
+## Engines
 
-Hugging Face Spaces can expose Gradio APIs, but endpoint names and parameter order vary. This project first inspects the live API schemas instead of guessing them.
+- **Gemini** — creative director: turns your idea into a detailed cinematic prompt. Configure `GEMINI_API_KEY` to enable it. If the key is absent, the original prompt is passed through unchanged.
+- **Qwen Image** — creates the 9:16 keyframe image.
+- **Wan 2.2** — animates that image into a short MP4 clip.
 
-1. Open **Actions → AI Animation Studio V2 API Check**.
-2. Press **Run workflow**.
-3. Download the `huggingface-space-api-report` artifact.
-4. The report contains the actual endpoints and parameter signatures for both models.
+The Qwen and Wan Gradio endpoints were inspected successfully in GitHub Actions. Their exact endpoint names and parameter order are used in `generate.py`.
 
-The public Spaces can be inspected without a token. Adding an optional repository secret named `HF_TOKEN` (a Hugging Face read token) can improve authenticated access and rate limits.
+## Run from GitHub Actions
 
-## Target models
+1. Open **Settings → Secrets and variables → Actions** in this repository.
+2. Add repository secret `GEMINI_API_KEY` using a Google AI Studio API key. This is optional; without it the Qwen → Wan path still runs.
+3. Optionally add `HF_TOKEN` (a Hugging Face read token) to improve access/rate limits.
+4. Open **Actions → AI Animation Studio V2 Generate**.
+5. Choose **Run workflow**, enter a short shot description, and start it.
+6. Download the `mplayer-ai-animation` artifact when the run completes. It contains the MP4, keyframe image, and generation metadata.
 
-- Image: `Qwen/Qwen-Image`
-- Image-to-video: `zerogpu-aoti/wan2-2-fp8da-aoti-faster`
+No key is stored in the repository. Do not paste API keys into source files or chat.
 
-The intended first visual test is one short vertical character shot. Persian narration and subtitles will be added only after the visual generation works.
+## Local command
 
-## Free-tier limits
+Install `requirements.txt`, then run:
 
-Hugging Face ZeroGPU quotas are limited and shared. The official documentation currently lists 2 GPU minutes per day for unauthenticated use and 5 minutes per day for a free account. Queueing, quota exhaustion, or public Space downtime may prevent a run.
+```bash
+python AI-Animation-Studio-v2/generate.py --prompt "A small robot walks through a neon-lit rainy city"
+```
 
-No daily 2–3 minute output guarantee is made. The first goal is one verifiable high-quality test clip.
+Set `GEMINI_API_KEY` and optionally `HF_TOKEN` in the environment first.
+
+## Free usage and limitations
+
+Public Hugging Face Spaces may queue, sleep, change, or exhaust their shared ZeroGPU quota. A successful API inspection does not guarantee a successful generation every time. Gemini API usage and model availability depend on Google's current account, region, and pricing terms. This workflow does not enable billing or promise unlimited free generation.
+
+The first generation is intentionally a single short vertical shot. Voice, Persian subtitles, multi-shot editing, and final reel assembly are later stages.
