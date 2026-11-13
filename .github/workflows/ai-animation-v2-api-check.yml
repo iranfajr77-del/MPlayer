@@ -1,6 +1,10 @@
 name: AI Animation Studio V2 API Check
 
 on:
+  push:
+    paths:
+      - 'AI-Animation-Studio-v2/inspect_spaces.py'
+      - '.github/workflows/ai-animation-v2-api-check.yml'
   workflow_dispatch:
 
 permissions:
