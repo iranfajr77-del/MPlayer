@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: many1-fcc-proxy
+    runtime: python
+    plan: free
+    region: ohio
+    repo: https://github.com/Alishahryar1/free-claude-code
+    branch: main
+    buildCommand: pip install .
+    startCommand: fcc-server
+    autoDeploy: true
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: FCC_OPEN_BROWSER
+        value: "false"
+      - key: MESSAGING_PLATFORM
+        value: none
+      - key: PROXY_AUTH_ENABLED
+        value: "true"
+      - key: ANTHROPIC_AUTH_TOKEN
+        generateValue: true
+      - key: MODEL
+        value: llm7/default
+      - key: LLM7_API_KEY
+        sync: false
