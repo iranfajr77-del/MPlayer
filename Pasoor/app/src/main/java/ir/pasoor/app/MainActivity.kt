@@ -44,7 +44,7 @@ data class Played(val seat: Int, val card: Card)
 data class MatchState(
     val hands: List<List<Card>>, val trump: Suit?, val leader: Int, val turn: Int,
     val trick: List<Played>, val tricks: List<Int>, val points: List<Int>,
-    val handNo: Int, val phase: String, val message: String
+    val handNo: Int, val phase: String, val message: String, val stock: List<Card> = emptyList()
 )
 
 private fun newDeck(): List<Card> = Suit.values().flatMap { s -> (2..14).map { Card(s, it) } }.shuffled()
@@ -77,13 +77,20 @@ private fun botCard(hand: List<Card>, trick: List<Played>, trump: Suit): Card {
     }
     return if (canBeat.isNotEmpty()) canBeat.minByOrNull { it.rank }!! else legal.minByOrNull { it.rank }!!
 }
-private fun deal(): List<List<Card>> {
+private fun deal(): Pair<List<List<Card>>, List<Card>> {
     val deck = newDeck()
-    return (0..3).map { deck.drop(it * 13).take(13) }
+    val firstFive = (0..3).map { deck.drop(it * 5).take(5) }
+    return firstFive to deck.drop(20)
 }
-private fun initialState(): MatchState =
-    MatchState(deal(), null, 0, 0, emptyList(), listOf(0,0,0,0), listOf(0,0), 1, "trump", "حکم را انتخاب کن")
-private fun chooseTrump(s: MatchState, suit: Suit): MatchState = runBots(s.copy(trump=suit, phase="play", message="حکم " + suit.fa + " است"))
+private fun finishDeal(s: MatchState, suit: Suit): MatchState {
+    val fullHands = s.hands.mapIndexed { i, h -> h + s.stock.drop(i * 8).take(8) }
+    return runBots(s.copy(hands=fullHands, stock=emptyList(), trump=suit, phase="play", message="حکم " + suit.fa + " است"))
+}
+private fun initialState(): MatchState {
+    val d = deal()
+    return MatchState(d.first, null, 0, 0, emptyList(), listOf(0,0,0,0), listOf(0,0), 1, "trump", "پنج کارت اول را ببین و حکم را انتخاب کن", d.second)
+}
+private fun chooseTrump(s: MatchState, suit: Suit): MatchState = finishDeal(s, suit)
 private fun playCard(s: MatchState, card: Card): MatchState {
     if (s.turn != 0 || card !in legalCards(s.hands[0], s.trick)) return s
     val next = s.copy(hands=s.hands.mapIndexed { i,h -> if (i==0) h-card else h },
@@ -118,15 +125,15 @@ private fun finishTrick(s: MatchState): MatchState {
     return s.copy(tricks=counts, leader=seat, turn=seat, trick=emptyList(), message="دست برای جایگاه " + (seat+1))
 }
 private fun nextHand(old: MatchState): MatchState {
-    val hands = deal()
+    val d = deal()
     val hakem = old.handNo % 4
-    val base = old.copy(hands=hands, trump=null, leader=hakem, turn=hakem, trick=emptyList(),
+    val base = old.copy(hands=d.first, stock=d.second, trump=null, leader=hakem, turn=hakem, trick=emptyList(),
         tricks=listOf(0,0,0,0), handNo=old.handNo+1,
-        phase=if (hakem==0) "trump" else "play",
+        phase="trump",
         message=if (hakem==0) "نوبت حاکم شماست؛ حکم را انتخاب کن" else "حاکم: جایگاه " + (hakem+1))
     if (hakem==0) return base
-    val suit = Suit.values().maxByOrNull { x -> hands[hakem].filter { it.suit==x }.sumOf { it.rank } }!!
-    return runBots(base.copy(trump=suit))
+    val suit = Suit.values().maxByOrNull { x -> d.first[hakem].filter { it.suit==x }.sumOf { it.rank } }!!
+    return finishDeal(base, suit)
 }
 
 @Composable
