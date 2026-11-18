@@ -134,6 +134,7 @@ fun PasoorApp() {
     var game by remember { mutableStateOf(initialState()) }
     var screen by remember { mutableStateOf("home") }
     var playerName by remember { mutableStateOf("بازیکن") }
+    var botNames by remember { mutableStateOf(randomBotNames()) }
     MaterialTheme(colorScheme=darkColorScheme(primary=Gold, secondary=Gold, background=Ink, surface=Color(0xFF1B1916), onPrimary=Ink, onBackground=Cream, onSurface=Cream)) {
         Surface(Modifier.fillMaxSize(), color=Ink) {
             when (screen) {
@@ -142,7 +143,7 @@ fun PasoorApp() {
                     Text("پاسور", color=Gold, fontSize=48.sp, fontWeight=FontWeight.Black)
                     Text("حکم ایرانی • آفلاین", color=Cream.copy(alpha=.75f))
                     Spacer(Modifier.height(34.dp))
-                    MenuButton("بازی با ربات‌ها") { game=initialState(); screen="game" }
+                    MenuButton("بازی با ربات‌ها") { game=initialState(); botNames=randomBotNames(); screen="game" }
                     MenuButton("بازی بلوتوثی • به‌زودی", enabled=false) { }
                     MenuButton("انتخاب نام بازیکن") { screen="name" }
                     Text("نسخه آزمایشی ۰٫۱", color=Gold.copy(alpha=.65f), modifier=Modifier.padding(top=24.dp))
@@ -152,7 +153,7 @@ fun PasoorApp() {
                     OutlinedTextField(value=playerName, onValueChange={playerName=it}, label={Text("نام شما")})
                     MenuButton("ذخیره") { screen="home" }
                 }
-                else -> GameBoard(game, playerName, { game=chooseTrump(game,it) }, { game=playCard(game,it) }, { game=initialState() }, { screen="home" })
+                else -> GameBoard(game, playerName, botNames, { game=chooseTrump(game,it) }, { game=playCard(game,it) }, { game=initialState() }, { screen="home" })
             }
         }
     }
@@ -165,7 +166,7 @@ private fun MenuButton(label: String, enabled: Boolean=true, action: ()->Unit) {
     }
 }
 @Composable
-private fun GameBoard(game: MatchState, name: String, onTrump:(Suit)->Unit, onPlay:(Card)->Unit, onRestart:()->Unit, onHome:()->Unit) {
+private fun GameBoard(game: MatchState, name: String, botNames: List<String>, onTrump:(Suit)->Unit, onPlay:(Card)->Unit, onRestart:()->Unit, onHome:()->Unit) {
     Column(Modifier.fillMaxSize().padding(12.dp), horizontalAlignment=Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween) {
             Text("پاسور", color=Gold, fontSize=24.sp, fontWeight=FontWeight.Bold)
@@ -180,7 +181,7 @@ private fun GameBoard(game: MatchState, name: String, onTrump:(Suit)->Unit, onPl
                 if (game.trump!=null) Text("حکم: "+game.trump.symbol+" "+game.trump.fa, color=Gold, fontSize=22.sp)
                 Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                     game.trick.forEach { p -> Column(horizontalAlignment=Alignment.CenterHorizontally) {
-                        Text(if (p.seat==0) name else listOf("آرش","نیما","سهراب")[p.seat%3], color=Cream, fontSize=10.sp)
+                        Text(if (p.seat==0) name else botNames[p.seat], color=Cream, fontSize=10.sp)
                         CardFace(p.card)
                     } }
                 }
