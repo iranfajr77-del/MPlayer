@@ -15,7 +15,7 @@ Android native project (Kotlin + Jetpack Compose) for a Persian Hokm card game.
 - Simple vector launcher icon
 
 ## Not yet implemented
-- Bluetooth host / peer synchronization and in-game seat assignment (transport foundation added; lobby, permissions UI, authoritative game sync, and device testing remain)
+- Bluetooth lobby UI, runtime permission request, host socket, and connection to already-paired devices (basic transport only; automatic discovery/pairing, seat assignment, synchronized dealing/turns/game state, and multi-phone testing remain)
 - Finished Persian carpet artwork and cream patterned card backs
 - Advanced strategic bot behavior, special scoring variants, and exhaustive rules tests
 
