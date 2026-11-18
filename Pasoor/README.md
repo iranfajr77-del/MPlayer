@@ -11,12 +11,13 @@ Android native project (Kotlin + Jetpack Compose) for a Persian Hokm card game.
 - First team to seven tricks wins a hand; match score tracked to seven
 - Hakem rotates between seats
 - Editable player name and randomized Iranian bot names
-- Black/gold interface and a basic Persian-inspired table
+- Black/gold interface, green table, and cream/gold patterned card backs
 - Simple vector launcher icon
+- Versioned Bluetooth message protocol with private per-seat card views (protocol layer only; not yet wired into live gameplay)
 
 ## Not yet implemented
-- Bluetooth lobby UI, runtime permission request, host socket, and connection to already-paired devices (basic transport only; automatic discovery/pairing, seat assignment, synchronized dealing/turns/game state, and multi-phone testing remain)
-- Finished Persian carpet artwork and cream patterned card backs
+- Bluetooth lobby UI, runtime permission request, host socket, and connection to already-paired devices (basic transport only; automatic discovery/pairing, live seat assignment, authoritative game synchronization, and multi-phone testing remain)
+- Finished Persian carpet artwork
 - Advanced strategic bot behavior, special scoring variants, and exhaustive rules tests
 
 ## Build
