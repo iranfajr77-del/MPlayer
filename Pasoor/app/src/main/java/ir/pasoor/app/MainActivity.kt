@@ -114,7 +114,8 @@ private fun finishTrick(s: MatchState): MatchState {
     val seat = winner(s.trick, trump)
     val counts = s.tricks.mapIndexed { i,n -> if (i==seat) n+1 else n }
     val winningTeam = team(seat)
-    if (counts[winningTeam] >= 7) {
+    val teamTricks = counts[winningTeam] + counts[winningTeam + 2]
+    if (teamTricks >= 7) {
         val pts = s.points.mapIndexed { i,n -> if (i==winningTeam) n+1 else n }
         if (pts[winningTeam] >= 7) return s.copy(tricks=counts, points=pts, phase="done",
             message=if (winningTeam==0) "تبریک! تیم شما برنده شد 🏆" else "ربات‌ها برنده شدند")
