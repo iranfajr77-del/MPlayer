@@ -181,8 +181,21 @@ private fun GameBoard(game: MatchState, name: String, botNames: List<String>, on
             Text("پاسور", color=Gold, fontSize=24.sp, fontWeight=FontWeight.Bold)
             Text(game.points[0].toString()+" - "+game.points[1].toString(), color=Cream, fontWeight=FontWeight.Bold)
         }
-        Text("ربات بالا: "+game.hands[2].size+" کارت", color=Gold)
-        Text("ربات چپ: "+game.hands[1].size+"  •  ربات راست: "+game.hands[3].size, color=Cream.copy(alpha=.7f), fontSize=12.sp)
+        Row(horizontalArrangement=Arrangement.spacedBy(3.dp), verticalAlignment=Alignment.CenterVertically) {
+            Text(botNames[2] + "  ", color=Gold, fontSize=11.sp)
+            repeat(minOf(5, game.hands[2].size)) { CardBack() }
+            Text("  ${game.hands[2].size}", color=Cream, fontSize=11.sp)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween, verticalAlignment=Alignment.CenterVertically) {
+            Row(verticalAlignment=Alignment.CenterVertically) {
+                Text(botNames[1] + " ", color=Gold, fontSize=10.sp)
+                repeat(minOf(3, game.hands[1].size)) { CardBack(compact=true) }
+            }
+            Row(verticalAlignment=Alignment.CenterVertically) {
+                repeat(minOf(3, game.hands[3].size)) { CardBack(compact=true) }
+                Text(" " + botNames[3], color=Gold, fontSize=10.sp)
+            }
+        }
         Box(Modifier.fillMaxWidth().weight(1f).padding(vertical=12.dp).background(Green, RoundedCornerShape(22.dp)).border(3.dp,Gold,RoundedCornerShape(22.dp)).padding(12.dp), contentAlignment=Alignment.Center) {
             Column(horizontalAlignment=Alignment.CenterHorizontally) {
                 Text("فرش ایرانی", color=Gold, fontWeight=FontWeight.Bold, fontSize=18.sp)
@@ -221,6 +234,20 @@ private fun GameBoard(game: MatchState, name: String, botNames: List<String>, on
         }
     }
 }
+
+@Composable
+private fun CardBack(compact: Boolean = false) {
+    val w = if (compact) 18.dp else 25.dp
+    val h = if (compact) 27.dp else 36.dp
+    Box(Modifier.width(w).height(h).padding(1.dp)
+        .background(Cream, RoundedCornerShape(4.dp))
+        .border(1.dp, Gold, RoundedCornerShape(4.dp)).padding(2.dp)
+        .border(1.dp, Color(0xFF8B642D), RoundedCornerShape(2.dp)),
+        contentAlignment=Alignment.Center) {
+        Text("✥", color=Color(0xFF8B642D), fontSize=if(compact) 10.sp else 14.sp)
+    }
+}
+
 @Composable
 private fun CardFace(card:Card, active:Boolean=false, onClick:(()->Unit)?=null) {
     val color=if(card.suit.red) Color(0xFFB32632) else Color.Black
