@@ -25,7 +25,7 @@ fun BluetoothLobby(onBack: () -> Unit) {
     val manager = remember { context.getSystemService(BluetoothManager::class.java) }
     val adapter = remember { manager?.adapter }
     var permissionOk by remember { mutableStateOf(false) }
-    var enabled by remember { mutableStateOf(adapter?.isEnabled == true) }
+    var enabled by remember { mutableStateOf(false) }
     var hosting by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("برای بازی بلوتوثی، ابتدا مجوزها را بدهید.") }
     var devices by remember { mutableStateOf<List<BluetoothDevice>>(emptyList()) }
@@ -38,6 +38,7 @@ fun BluetoothLobby(onBack: () -> Unit) {
     }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         permissionOk = requiredPermissions.all { result[it] == true || ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
+        enabled = if (permissionOk) try { adapter?.isEnabled == true } catch (_: SecurityException) { false } else false
         status = if (permissionOk) "مجوزها صادر شد." else "برای ادامه باید مجوز بلوتوث را فعال کنی."
     }
     val enableLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
