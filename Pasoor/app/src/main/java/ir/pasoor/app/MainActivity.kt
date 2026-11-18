@@ -151,10 +151,11 @@ fun PasoorApp() {
                     Text("حکم ایرانی • آفلاین", color=Cream.copy(alpha=.75f))
                     Spacer(Modifier.height(34.dp))
                     MenuButton("بازی با ربات‌ها") { game=initialState(); botNames=randomBotNames(); screen="game" }
-                    MenuButton("بازی بلوتوثی • به‌زودی", enabled=false) { }
+                    MenuButton("بازی بلوتوثی") { screen="bluetooth" }
                     MenuButton("انتخاب نام بازیکن") { screen="name" }
                     Text("نسخه آزمایشی ۰٫۱", color=Gold.copy(alpha=.65f), modifier=Modifier.padding(top=24.dp))
                 }
+                "bluetooth" -> BluetoothLobby { screen="home" }
                 "name" -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement=Arrangement.Center) {
                     Text("نام بازیکن", color=Gold, fontSize=28.sp)
                     OutlinedTextField(value=playerName, onValueChange={playerName=it}, label={Text("نام شما")})
