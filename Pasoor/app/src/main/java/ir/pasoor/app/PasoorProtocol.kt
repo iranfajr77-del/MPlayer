@@ -108,7 +108,7 @@ object PasoorProtocol {
             j.getInt("handNo"), j.getString("phase"), j.getString("message"), stock)
     }
 
-    private fun intArray(values: List<Int>) = JSONArray().also { a -> values.forEach(a::put) }
+    private fun intArray(values: List<Int>) = JSONArray().also { a -> values.forEach { a.put(it) } }
     private fun readInts(a: JSONArray, expected: Int): List<Int> {
         require(a.length() == expected)
         return (0 until a.length()).map { a.getInt(it) }
