@@ -18,6 +18,11 @@ object PasoorProtocol {
         data class TrumpRequest(val suit: Suit) : Message()
         data class PlayRequest(val card: Card) : Message()
         data class GameSnapshot(val state: MatchState) : Message()
+        data class PlayerView(
+            val seat: Int, val hand: List<Card>, val handSizes: List<Int>, val trump: Suit?,
+            val leader: Int, val turn: Int, val trick: List<Played>, val tricks: List<Int>,
+            val points: List<Int>, val handNo: Int, val phase: String, val message: String
+        ) : Message()
         data class Notice(val text: String) : Message()
     }
 
@@ -43,6 +48,16 @@ object PasoorProtocol {
             is Message.TrumpRequest -> root.put("type", "trump_request").put("suit", message.suit.name)
             is Message.PlayRequest -> root.put("type", "play_request").put("card", cardJson(message.card))
             is Message.GameSnapshot -> root.put("type", "snapshot").put("state", stateJson(message.state))
+            is Message.PlayerView -> {
+                root.put("type", "player_view").put("seat", message.seat)
+                    .put("hand", JSONArray().also { a -> message.hand.forEach { a.put(cardJson(it)) } })
+                    .put("handSizes", intArray(message.handSizes))
+                    .put("trump", message.trump?.name ?: JSONObject.NULL)
+                    .put("leader", message.leader).put("turn", message.turn)
+                    .put("trick", trickJson(message.trick)).put("tricks", intArray(message.tricks))
+                    .put("points", intArray(message.points)).put("handNo", message.handNo)
+                    .put("phase", message.phase).put("message", message.message)
+            }
             is Message.Notice -> root.put("type", "notice").put("text", message.text)
         }
         return root.toString()
@@ -67,6 +82,23 @@ object PasoorProtocol {
             "trump_request" -> Message.TrumpRequest(Suit.valueOf(root.getString("suit")))
             "play_request" -> Message.PlayRequest(readCard(root.getJSONObject("card")))
             "snapshot" -> Message.GameSnapshot(readState(root.getJSONObject("state")))
+            "player_view" -> {
+                val handArray = root.getJSONArray("hand")
+                val sizes = readInts(root.getJSONArray("handSizes"), 4)
+                val trickArray = root.getJSONArray("trick")
+                val trick = (0 until trickArray.length()).map { i ->
+                    val x = trickArray.getJSONObject(i)
+                    Played(x.getInt("seat").also { require(it in 0..3) }, readCard(x.getJSONObject("card")))
+                }
+                Message.PlayerView(
+                    root.getInt("seat").also { require(it in 0..3) },
+                    (0 until handArray.length()).map { readCard(handArray.getJSONObject(it)) },
+                    sizes, if (root.isNull("trump")) null else Suit.valueOf(root.getString("trump")),
+                    root.getInt("leader"), root.getInt("turn"), trick,
+                    readInts(root.getJSONArray("tricks"), 4), readInts(root.getJSONArray("points"), 2),
+                    root.getInt("handNo"), root.getString("phase"), root.getString("message")
+                )
+            }
             "notice" -> Message.Notice(root.optString("text"))
             else -> throw IllegalArgumentException("پیام ناشناخته از دستگاه دیگر")
         }
@@ -75,11 +107,21 @@ object PasoorProtocol {
     private fun cardJson(card: Card) = JSONObject().put("suit", card.suit.name).put("rank", card.rank)
     private fun readCard(json: JSONObject) = Card(Suit.valueOf(json.getString("suit")), json.getInt("rank").also { require(it in 2..14) })
 
+    fun playerView(state: MatchState, seat: Int): Message.PlayerView {
+        require(seat in 0..3)
+        return Message.PlayerView(seat, state.hands[seat], state.hands.map { it.size }, state.trump,
+            state.leader, state.turn, state.trick, state.tricks, state.points,
+            state.handNo, state.phase, state.message)
+    }
+
+    private fun trickJson(trick: List<Played>) = JSONArray().also { a ->
+        trick.forEach { a.put(JSONObject().put("seat", it.seat).put("card", cardJson(it.card))) }
+    }
+
     private fun stateJson(s: MatchState): JSONObject {
         val hands = JSONArray()
         s.hands.forEach { hand -> val a = JSONArray(); hand.forEach { a.put(cardJson(it)) }; hands.put(a) }
-        val trick = JSONArray()
-        s.trick.forEach { trick.put(JSONObject().put("seat", it.seat).put("card", cardJson(it.card))) }
+        val trick = trickJson(s.trick)
         return JSONObject().put("hands", hands).put("trump", s.trump?.name ?: JSONObject.NULL)
             .put("leader", s.leader).put("turn", s.turn).put("trick", trick)
             .put("tricks", intArray(s.tricks)).put("points", intArray(s.points))
